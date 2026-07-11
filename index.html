@@ -65,13 +65,14 @@
             width: 100%;
             height: 100%;
             display: grid;
-            grid-template-columns: 0.9fr 1.05fr 1.15fr;
+            grid-template-columns: 0.88fr 2.12fr;
             gap: var(--gap);
             min-width: 0;
             min-height: 0;
         }
 
-        .column {
+        .column,
+        .main-area {
             display: grid;
             gap: var(--gap);
             min-width: 0;
@@ -79,19 +80,66 @@
         }
 
         .left { grid-template-rows: auto auto 1fr; }
-        .center { grid-template-rows: auto 1fr auto; }
-        .right { grid-template-rows: 1fr; }
-
-        html[data-layout="nest-hub"] #app {
-            grid-template-columns: 0.86fr 1fr 1.08fr;
+        .main-area { grid-template-rows: calc(var(--u) * 17) 1fr auto; }
+        .top-row {
+            display: grid;
+            grid-template-columns: 1.02fr 0.98fr;
+            gap: var(--gap);
+            min-width: 0;
+            min-height: 0;
         }
 
-        html[data-layout="nest-hub"] .left {
+        /* FHD(新レイアウト)では従来の縦積みスケジュールは非表示 */
+        .schedule-panel { display: none; }
+
+        /* --- Nest Hub / compact は従来の3カラム構成を維持 --- */
+        html[data-layout="nest-hub"] #app,
+        html[data-layout="compact"] #app {
+            grid-template-columns: 0.86fr 1fr 1.08fr;
+            grid-template-rows: 1fr 0.8fr auto;
+            grid-template-areas:
+                "left hourly schedule"
+                "left pressure schedule"
+                "left credits schedule";
+        }
+
+        html[data-layout="nest-hub"] .main-area,
+        html[data-layout="compact"] .main-area,
+        html[data-layout="nest-hub"] .top-row,
+        html[data-layout="compact"] .top-row {
+            display: contents;
+        }
+
+        html[data-layout="nest-hub"] .left,
+        html[data-layout="compact"] .left {
+            grid-area: left;
             grid-template-rows: auto auto 1fr;
         }
 
-        html[data-layout="nest-hub"] .center {
-            grid-template-rows: auto 1fr auto;
+        html[data-layout="nest-hub"] .hourly-panel,
+        html[data-layout="compact"] .hourly-panel {
+            grid-area: hourly;
+        }
+
+        html[data-layout="nest-hub"] .graph-panel,
+        html[data-layout="compact"] .graph-panel {
+            grid-area: pressure;
+        }
+
+        html[data-layout="nest-hub"] .credits,
+        html[data-layout="compact"] .credits {
+            grid-area: credits;
+        }
+
+        html[data-layout="nest-hub"] .week-panel,
+        html[data-layout="compact"] .week-panel {
+            display: none;
+        }
+
+        html[data-layout="nest-hub"] .schedule-panel,
+        html[data-layout="compact"] .schedule-panel {
+            display: flex;
+            grid-area: schedule;
         }
 
         .panel {
@@ -276,7 +324,8 @@
         .graph-panel,
         .daily-panel,
         .schedule-panel,
-        .radar-panel {
+        .radar-panel,
+        .week-panel {
             padding: calc(var(--u) * 0.85) calc(var(--u) * 0.95);
         }
 
@@ -353,6 +402,98 @@
             height: 100%;
         }
 
+        .week-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .week-grid {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: calc(var(--u) * 0.38);
+        }
+
+        .week-day {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.28);
+            border-radius: calc(var(--u) * 0.85);
+            background: rgba(255, 255, 255, 0.055);
+            padding: calc(var(--u) * 0.45);
+            overflow: hidden;
+        }
+
+        .week-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: calc(var(--u) * 0.2);
+            color: var(--muted);
+            font-size: calc(var(--u) * 0.95);
+            white-space: nowrap;
+        }
+
+        .week-day.sunday .week-day-header { color: #ff9a8f; }
+        .week-day.saturday .week-day-header { color: #8fc8ff; }
+
+        .week-date {
+            color: var(--text);
+            font-size: calc(var(--u) * 1.2);
+            font-weight: 500;
+        }
+
+        .week-event-list {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.22);
+            overflow: hidden;
+        }
+
+        .week-event {
+            min-width: 0;
+            border-left: calc(var(--u) * 0.22) solid var(--accent);
+            border-radius: calc(var(--u) * 0.45);
+            background: var(--panel-strong);
+            padding: calc(var(--u) * 0.22) calc(var(--u) * 0.35);
+            color: var(--text);
+            font-size: calc(var(--u) * 0.78);
+            line-height: 1.22;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .week-event-time {
+            color: var(--warn);
+            margin-right: 0.25em;
+        }
+
+        .week-more {
+            color: var(--dim);
+            font-size: calc(var(--u) * 0.72);
+            padding-left: calc(var(--u) * 0.45);
+        }
+
+        html[data-layout="nest-hub"] .week-grid {
+            gap: calc(var(--u) * 0.26);
+        }
+
+        html[data-layout="nest-hub"] .week-day {
+            padding: calc(var(--u) * 0.34);
+        }
+
+        html[data-layout="nest-hub"] .week-event {
+            font-size: calc(var(--u) * 0.68);
+            padding: calc(var(--u) * 0.16) calc(var(--u) * 0.26);
+        }
+
         .daily-list {
             height: calc(100% - 3.2vh);
             display: grid;
@@ -406,7 +547,6 @@
         }
 
         .schedule-panel {
-            display: flex;
             flex-direction: column;
         }
 
@@ -523,31 +663,35 @@
             </section>
         </section>
 
-        <section class="column center">
-            <section class="panel hourly-panel">
-                <div class="panel-title">
-                    <span>1時間おき</span>
-                    <span class="panel-subtitle">6時間</span>
-                </div>
-                <div id="hourlyGrid" class="hourly-grid"></div>
-            </section>
+        <section class="main-area">
+            <div class="top-row">
+                <section class="panel hourly-panel">
+                    <div class="panel-title">
+                        <span>1時間おき</span>
+                        <span class="panel-subtitle">6時間</span>
+                    </div>
+                    <div id="hourlyGrid" class="hourly-grid"></div>
+                </section>
 
-            <section class="panel graph-panel">
-                <div class="panel-title">
-                    <span>Pressure</span>
-                    <span class="panel-subtitle">hPa</span>
-                </div>
-                <div class="graph-body">
-                    <canvas id="pressureCanvas"></canvas>
-                </div>
-            </section>
-
-            <div class="credits">
-                予報: Open-Meteo.com / 天気概況: 気象庁
+                <section class="panel graph-panel">
+                    <div class="panel-title">
+                        <span>Pressure</span>
+                        <span class="panel-subtitle">hPa</span>
+                    </div>
+                    <div class="graph-body">
+                        <canvas id="pressureCanvas"></canvas>
+                    </div>
+                </section>
             </div>
-        </section>
 
-        <section class="column right">
+            <section class="panel week-panel">
+                <div class="panel-title">
+                    <span>週間カレンダー</span>
+                    <span id="weekRange" class="panel-subtitle">日曜 - 土曜</span>
+                </div>
+                <div id="weekGrid" class="week-grid"></div>
+            </section>
+
             <section class="panel schedule-panel">
                 <div class="panel-title">
                     <span>Schedule</span>
@@ -555,6 +699,10 @@
                 </div>
                 <div id="eventList" class="event-list"></div>
             </section>
+
+            <div class="credits">
+                予報: Open-Meteo.com / 天気概況: 気象庁
+            </div>
         </section>
     </main>
 
@@ -711,6 +859,29 @@
             return `${day} ${startTime}${endTime}`;
         }
 
+        function startOfDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function startOfWeekSunday(date) {
+            const day = startOfDay(date);
+            day.setDate(day.getDate() - day.getDay());
+            return day;
+        }
+
+        function sameDay(a, b) {
+            return a.getFullYear() === b.getFullYear()
+                && a.getMonth() === b.getMonth()
+                && a.getDate() === b.getDate();
+        }
+
+        function formatEventTimeShort(event) {
+            if (event.allDay) return '終日';
+            const start = new Date(event.start);
+            if (Number.isNaN(start.getTime())) return '';
+            return `${fmt2(start.getHours())}:${fmt2(start.getMinutes())}`;
+        }
+
         function getHourlyWindow(weather) {
             const hourly = Array.isArray(weather?.hourlyForecast) ? weather.hourlyForecast : [];
             if (hourly.length <= 6) return hourly;
@@ -787,6 +958,7 @@
 
         function renderEvents() {
             const list = el('eventList');
+            if (!list) return;
             const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
             const now = Date.now();
             const upcoming = events
@@ -795,7 +967,6 @@
                 .slice(0, getMaxEvents());
 
             setText('eventCount', `${upcoming.length}件`);
-            if (!list) return;
             if (upcoming.length === 0) {
                 list.innerHTML = '<div class="empty">予定はありません</div>';
                 return;
@@ -810,6 +981,55 @@
                         <div class="event-time">${escapeHtml(formatEventTime(event))}</div>
                         ${location ? `<div class="event-location">${escapeHtml(location)}</div>` : ''}
                     </article>
+                `;
+            }).join('');
+        }
+
+        function renderWeekCalendar() {
+            const grid = el('weekGrid');
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            if (!grid) return;
+
+            const weekStart = startOfWeekSunday(new Date());
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            setText('weekRange', `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`);
+
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            const maxEventsPerDay = document.documentElement.dataset.layout === 'nest-hub' ? 3 : 4;
+
+            grid.innerHTML = Array.from({ length: 7 }, (_, index) => {
+                const day = new Date(weekStart);
+                day.setDate(weekStart.getDate() + index);
+                const dayStart = day.getTime();
+                const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+                const dayEvents = events
+                    .filter((event) => Number(event.end) > dayStart && Number(event.start) < dayEnd)
+                    .sort((a, b) => Number(a.start) - Number(b.start));
+                const visible = dayEvents.slice(0, maxEventsPerDay);
+                const hiddenCount = Math.max(0, dayEvents.length - visible.length);
+                const classes = [
+                    'week-day',
+                    index === 0 ? 'sunday' : '',
+                    index === 6 ? 'saturday' : '',
+                    sameDay(day, new Date()) ? 'today' : ''
+                ].filter(Boolean).join(' ');
+
+                return `
+                    <section class="${classes}">
+                        <div class="week-day-header">
+                            <span>${dayNames[index]}</span>
+                            <span class="week-date">${day.getDate()}</span>
+                        </div>
+                        <div class="week-event-list">
+                            ${visible.map((event) => `
+                                <div class="week-event" style="border-left-color:${colorToCss(event.color)}">
+                                    <span class="week-event-time">${escapeHtml(formatEventTimeShort(event))}</span>${escapeHtml(cleanText(event.title, '無題'))}
+                                </div>
+                            `).join('')}
+                            ${hiddenCount > 0 ? `<div class="week-more">+${hiddenCount}件</div>` : ''}
+                        </div>
+                    </section>
                 `;
             }).join('');
         }
@@ -830,14 +1050,15 @@
 
             const ctx = canvas.getContext('2d');
             ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
             ctx.fillStyle = '#1a1f28';
             ctx.fillRect(0, 0, width, height);
 
             const lat = Number(uiState.manualLat);
             const lon = Number(uiState.manualLon);
             const meta = uiState.weather?.nowcastMeta;
-            const layout = document.documentElement.dataset.layout || 'fhd';
-            const zoom = layout === 'nest-hub' ? 9 : 10;
+            const zoom = 10;
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
                 ctx.fillStyle = '#687080';
@@ -1017,6 +1238,7 @@
             renderClock();
             renderWeather();
             renderHourly();
+            renderWeekCalendar();
             renderEvents();
             drawRadar();
             drawPressure();
@@ -1044,6 +1266,8 @@
             });
 
             const options = new cast.framework.CastReceiverOptions();
+            // メディア非再生のカスタム UI でもアイドル切断しない
+            options.disableIdleTimeout = true;
             options.maxInactivity = 3600;
             context.start(options);
         }
@@ -1052,6 +1276,7 @@
             detectLayout();
             drawRadar();
             drawPressure();
+            renderWeekCalendar();
             renderEvents();
         }
 
