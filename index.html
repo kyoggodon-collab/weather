@@ -330,7 +330,18 @@
         }
 
         .hourly-panel {
-            padding-bottom: calc(var(--u) * 0.65);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding-bottom: calc(var(--u) * 0.55);
+        }
+
+        .hourly-panel-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.35);
         }
 
         .panel-title {
@@ -355,7 +366,66 @@
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: calc(var(--u) * 0.28);
-            height: calc(var(--u) * 6.8);
+            height: calc(var(--u) * 5.8);
+            flex-shrink: 0;
+        }
+
+        .daily-week-grid {
+            flex: 1;
+            min-height: calc(var(--u) * 3.6);
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: calc(var(--u) * 0.22);
+            align-content: end;
+        }
+
+        html[data-layout="nest-hub"] .daily-week-grid,
+        html[data-layout="compact"] .daily-week-grid {
+            display: none;
+        }
+
+        .daily-week-cell {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            gap: calc(var(--u) * 0.06);
+            padding: calc(var(--u) * 0.12) calc(var(--u) * 0.06);
+            border-radius: calc(var(--u) * 0.45);
+            background: rgba(255, 255, 255, 0.045);
+        }
+
+        .daily-week-cell.today {
+            background: rgba(98, 200, 255, 0.1);
+        }
+
+        .daily-week-dow {
+            color: var(--muted);
+            font-size: calc(var(--u) * 0.62);
+            line-height: 1;
+        }
+
+        .daily-week-icon {
+            font-size: calc(var(--u) * 1.35);
+            line-height: 1;
+        }
+
+        .daily-week-temps {
+            display: flex;
+            gap: 0.2em;
+            font-size: calc(var(--u) * 0.72);
+            font-weight: 500;
+            line-height: 1.1;
+        }
+
+        .daily-week-temps .temp-high { color: var(--temp-high); }
+        .daily-week-temps .temp-low { color: var(--temp-low); }
+
+        .daily-week-pop {
+            color: var(--pop-color);
+            font-size: calc(var(--u) * 0.58);
+            line-height: 1;
         }
 
         html[data-layout="nest-hub"] .hourly-grid {
@@ -444,10 +514,14 @@
 
         .week-cal-day-head {
             min-width: 0;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--u) * 0.1);
             padding: calc(var(--u) * 0.15) calc(var(--u) * 0.2);
             color: var(--muted);
-            font-size: calc(var(--u) * 0.82);
+            font-size: calc(var(--u) * 0.92);
             white-space: nowrap;
         }
 
@@ -458,20 +532,23 @@
             font-weight: 500;
         }
 
-        .week-cal-day-head .week-date {
-            display: block;
-            font-size: calc(var(--u) * 1.05);
-            color: var(--text);
-            line-height: 1.15;
+        .week-dow {
+            line-height: 1;
         }
 
-        .week-cal-day-head.today .week-date {
+        .week-date-num {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: calc(var(--u) * 1.8);
-            min-height: calc(var(--u) * 1.8);
+            width: calc(var(--u) * 2);
+            height: calc(var(--u) * 2);
             border-radius: 999px;
+            font-size: calc(var(--u) * 1.12);
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .week-cal-day-head.today .week-date-num {
             background: rgba(98, 200, 255, 0.22);
         }
 
@@ -499,9 +576,9 @@
         .week-cal-allday-event {
             min-width: 0;
             border-radius: calc(var(--u) * 0.35);
-            padding: calc(var(--u) * 0.14) calc(var(--u) * 0.28);
-            font-size: calc(var(--u) * 0.68);
-            line-height: 1.2;
+            padding: calc(var(--u) * 0.16) calc(var(--u) * 0.32);
+            font-size: calc(var(--u) * 0.8);
+            line-height: 1.25;
             color: var(--text);
             overflow: hidden;
             text-overflow: ellipsis;
@@ -522,6 +599,8 @@
             position: relative;
             min-width: 0;
             height: 100%;
+            padding: calc(var(--u) * 0.55) 0;
+            box-sizing: border-box;
         }
 
         .week-cal-time {
@@ -531,8 +610,19 @@
             transform: translateY(-50%);
             text-align: right;
             color: var(--dim);
-            font-size: calc(var(--u) * 0.62);
+            font-size: calc(var(--u) * 0.68);
             line-height: 1;
+        }
+
+        .week-cal-time.edge-start {
+            top: 0;
+            transform: none;
+        }
+
+        .week-cal-time.edge-end {
+            top: auto;
+            bottom: 0;
+            transform: none;
         }
 
         .week-cal-columns {
@@ -561,7 +651,7 @@
                 rgba(255, 255, 255, 0.06) 0,
                 rgba(255, 255, 255, 0.06) 1px,
                 transparent 1px,
-                transparent calc(100% / 13)
+                transparent calc(100% / 14)
             );
         }
 
@@ -573,18 +663,18 @@
             position: absolute;
             box-sizing: border-box;
             border-radius: calc(var(--u) * 0.32);
-            padding: calc(var(--u) * 0.12) calc(var(--u) * 0.22);
+            padding: calc(var(--u) * 0.14) calc(var(--u) * 0.26);
             overflow: hidden;
             color: #fff;
-            font-size: calc(var(--u) * 0.62);
-            line-height: 1.18;
+            font-size: calc(var(--u) * 0.74);
+            line-height: 1.22;
             border-left: calc(var(--u) * 0.16) solid var(--accent);
             background: rgba(98, 200, 255, 0.28);
             z-index: 1;
         }
 
         .week-cal-event-time {
-            font-size: calc(var(--u) * 0.56);
+            font-size: calc(var(--u) * 0.66);
             opacity: 0.92;
             margin-bottom: calc(var(--u) * 0.05);
             white-space: nowrap;
@@ -594,7 +684,7 @@
             overflow: hidden;
             display: -webkit-box;
             -webkit-box-orient: vertical;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 4;
             word-break: break-word;
         }
 
@@ -604,7 +694,7 @@
 
         .week-cal-event.short .week-cal-event-title {
             -webkit-line-clamp: 2;
-            font-size: calc(var(--u) * 0.58);
+            font-size: calc(var(--u) * 0.68);
         }
 
         /* Nest Hub では week-panel 自体を非表示のため以下は未使用 */
@@ -788,7 +878,10 @@
                         <span>1時間おき</span>
                         <span class="panel-subtitle">6時間</span>
                     </div>
-                    <div id="hourlyGrid" class="hourly-grid"></div>
+                    <div class="hourly-panel-body">
+                        <div id="hourlyGrid" class="hourly-grid"></div>
+                        <div id="dailyWeekGrid" class="daily-week-grid"></div>
+                    </div>
                 </section>
 
                 <section class="panel graph-panel">
@@ -1087,6 +1180,67 @@
             }).join('');
         }
 
+        function findDailyForDay(dailyList, dayDate) {
+            const dayStart = startOfDay(dayDate).getTime();
+            return dailyList.find((item) => {
+                const itemDay = startOfDay(new Date(Number(item.date))).getTime();
+                return itemDay === dayStart;
+            });
+        }
+
+        function renderDailyWeek() {
+            const grid = el('dailyWeekGrid');
+            if (!grid) return;
+
+            const layout = document.documentElement.dataset.layout || detectLayout();
+            if (layout === 'nest-hub' || layout === 'compact') {
+                grid.innerHTML = '';
+                return;
+            }
+
+            const daily = Array.isArray(uiState.weather?.dailyForecast) ? uiState.weather.dailyForecast : [];
+            const weekStart = startOfWeekSunday(new Date());
+            const today = new Date();
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+            if (daily.length === 0) {
+                grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">週間天気を待っています</div>';
+                return;
+            }
+
+            grid.innerHTML = Array.from({ length: 7 }, (_, index) => {
+                const day = new Date(weekStart);
+                day.setDate(weekStart.getDate() + index);
+                const forecast = findDailyForDay(daily, day);
+                const classes = ['daily-week-cell', sameDay(day, today) ? 'today' : ''].filter(Boolean).join(' ');
+
+                if (!forecast) {
+                    return `
+                        <div class="${classes}">
+                            <div class="daily-week-dow">${dayNames[index]}</div>
+                            <div class="daily-week-icon">--</div>
+                            <div class="daily-week-temps"><span>--</span><span>--</span></div>
+                        </div>
+                    `;
+                }
+
+                const tempMax = round(forecast.tempMax);
+                const tempMin = round(forecast.tempMin);
+                const pop = round(forecast.pop);
+                return `
+                    <div class="${classes}">
+                        <div class="daily-week-dow">${dayNames[index]}</div>
+                        <div class="daily-week-icon">${weatherEmoji(forecast.condition)}</div>
+                        <div class="daily-week-temps">
+                            <span class="temp-high">${tempMax === null ? '--' : tempMax}°</span>
+                            <span class="temp-low">${tempMin === null ? '--' : tempMin}°</span>
+                        </div>
+                        <div class="daily-week-pop">${pop === null ? '--' : pop}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function renderEvents() {
             const list = el('eventList');
             if (!list) return;
@@ -1116,9 +1270,33 @@
             }).join('');
         }
 
-        const CAL_START_HOUR = 9;
-        const CAL_END_HOUR = 22;
-        const CAL_HOUR_COUNT = CAL_END_HOUR - CAL_START_HOUR;
+        const CAL_START_MINUTES = 8 * 60 + 30;
+        const CAL_END_MINUTES = 22 * 60 + 30;
+        const CAL_DURATION_MINUTES = CAL_END_MINUTES - CAL_START_MINUTES;
+        const CAL_SEGMENT_COUNT = 14;
+
+        function msFromDayMinutes(dayStartMs, minutes) {
+            return dayStartMs + minutes * 60000;
+        }
+
+        function buildCalendarTimeLabels() {
+            const labels = [{ minute: CAL_START_MINUTES, text: '8:30', edge: 'start' }];
+            for (let hour = 9; hour <= 22; hour += 1) {
+                labels.push({ minute: hour * 60, text: `${hour}:00`, edge: 'middle' });
+            }
+            labels.push({ minute: CAL_END_MINUTES, text: '22:30', edge: 'end' });
+
+            return labels.map(({ minute, text, edge }) => {
+                const pct = ((minute - CAL_START_MINUTES) / CAL_DURATION_MINUTES) * 100;
+                if (edge === 'start') {
+                    return `<div class="week-cal-time edge-start">${text}</div>`;
+                }
+                if (edge === 'end') {
+                    return `<div class="week-cal-time edge-end">${text}</div>`;
+                }
+                return `<div class="week-cal-time" style="top:${pct}%">${text}</div>`;
+            }).join('');
+        }
 
         function eventOverlapsDay(event, dayStartMs, dayEndMs) {
             return Number(event.end) > dayStartMs && Number(event.start) < dayEndMs;
@@ -1135,12 +1313,12 @@
         }
 
         function clipEventToDayRange(event, dayStartMs) {
-            const rangeStart = dayStartMs + CAL_START_HOUR * 3600000;
-            const rangeEnd = dayStartMs + CAL_END_HOUR * 3600000;
+            const rangeStart = msFromDayMinutes(dayStartMs, CAL_START_MINUTES);
+            const rangeEnd = msFromDayMinutes(dayStartMs, CAL_END_MINUTES);
             const clipStart = Math.max(Number(event.start), rangeStart);
             const clipEnd = Math.min(Number(event.end), rangeEnd);
             if (clipEnd <= clipStart) return null;
-            return { event, clipStart, clipEnd };
+            return { event, clipStart, clipEnd, rangeStart };
         }
 
         function assignEventColumns(blocks) {
@@ -1205,8 +1383,8 @@
                 ].filter(Boolean).join(' ');
                 return `
                     <div class="${classes}">
-                        ${dayNames[index]}
-                        <span class="week-date">${day.getDate()}</span>
+                        <span class="week-dow">${dayNames[index]}</span>
+                        <span class="week-date-num">${day.getDate()}</span>
                     </div>
                 `;
             }).join('');
@@ -1229,11 +1407,7 @@
                 `;
             }).join('');
 
-            const timeLabels = Array.from({ length: CAL_HOUR_COUNT + 1 }, (_, index) => {
-                const hour = CAL_START_HOUR + index;
-                const top = (index / CAL_HOUR_COUNT) * 100;
-                return `<div class="week-cal-time" style="top:${top}%">${hour}:00</div>`;
-            }).join('');
+            const timeLabels = buildCalendarTimeLabels();
 
             const columnsHtml = days.map((day, index) => {
                 const dayStart = startOfDay(day).getTime();
@@ -1243,11 +1417,11 @@
                     .map((event) => clipEventToDayRange(event, dayStart))
                     .filter(Boolean);
                 const laidOut = assignEventColumns(timedBlocks);
-                const totalMs = CAL_HOUR_COUNT * 3600000;
+                const totalMs = CAL_DURATION_MINUTES * 60000;
 
-                const eventsHtml = laidOut.map(({ event, clipStart, clipEnd, col, colCount }) => {
-                    const top = ((clipStart - dayStart - CAL_START_HOUR * 3600000) / totalMs) * 100;
-                    const height = Math.max(((clipEnd - clipStart) / totalMs) * 100, 100 / CAL_HOUR_COUNT * 0.45);
+                const eventsHtml = laidOut.map(({ event, clipStart, clipEnd, col, colCount, rangeStart }) => {
+                    const top = ((clipStart - rangeStart) / totalMs) * 100;
+                    const height = Math.max(((clipEnd - clipStart) / totalMs) * 100, 100 / CAL_SEGMENT_COUNT * 0.4);
                     const width = 100 / colCount;
                     const left = width * col;
                     const isShort = (clipEnd - clipStart) < 45 * 60000;
@@ -1296,86 +1470,119 @@
             if (!canvas || !wrap) return Promise.resolve();
 
             const drawToken = ++radarDrawToken;
-            const ratio = window.devicePixelRatio || 1;
-            const width = Math.max(1, wrap.clientWidth);
-            const height = Math.max(1, wrap.clientHeight);
-            canvas.width = Math.floor(width * ratio);
-            canvas.height = Math.floor(height * ratio);
-            canvas.style.width = `${width}px`;
-            canvas.style.height = `${height}px`;
+            const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
+            const cssWidth = Math.max(1, wrap.clientWidth);
+            const cssHeight = Math.max(1, wrap.clientHeight);
+            canvas.width = Math.floor(cssWidth * dpr);
+            canvas.height = Math.floor(cssHeight * dpr);
+            canvas.style.width = `${cssWidth}px`;
+            canvas.style.height = `${cssHeight}px`;
 
             const ctx = canvas.getContext('2d');
-            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = 'high';
             ctx.fillStyle = '#1a1f28';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillRect(0, 0, cssWidth, cssHeight);
 
             const lat = Number(uiState.manualLat);
             const lon = Number(uiState.manualLon);
             const meta = uiState.weather?.nowcastMeta;
-            const zoom = 10;
+
+            // 地理院は詳細ズーム。HiDPI ではさらに1段上げてタイルの引き伸ばしを抑える
+            // 気象庁ナウキャストは最大 z=10 のため、地図より粗くても拡大して重ねる
+            const mapZoom = dpr >= 1.5 ? 13 : 12;
+            const radarZoom = 10;
+            const radarScale = Math.pow(2, mapZoom - radarZoom);
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
                 ctx.fillStyle = '#687080';
-                ctx.font = `${Math.max(12, width * 0.04)}px sans-serif`;
+                ctx.font = `${Math.max(12, cssWidth * 0.04)}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('位置情報を待っています', width / 2, height / 2);
+                ctx.fillText('位置情報を待っています', cssWidth / 2, cssHeight / 2);
                 return Promise.resolve();
             }
 
-            const center = latLonToPixel(lat, lon, zoom);
-            const topLeftX = center.x - width / 2;
-            const topLeftY = center.y - height / 2;
-            const startTx = Math.floor(topLeftX / TILE_SIZE);
-            const startTy = Math.floor(topLeftY / TILE_SIZE);
-            const endTx = Math.floor((topLeftX + width) / TILE_SIZE);
-            const endTy = Math.floor((topLeftY + height) / TILE_SIZE);
-            const gsiBase = 'https://cyberjapandata.gsi.go.jp/xyz/pale/';
+            const center = latLonToPixel(lat, lon, mapZoom);
+            const topLeftX = center.x - cssWidth / 2;
+            const topLeftY = center.y - cssHeight / 2;
+
+            // 標準地図の方が pale より線がシャープ
+            const gsiBase = 'https://cyberjapandata.gsi.go.jp/xyz/std/';
             const jmaBase = meta
                 ? `https://www.jma.go.jp/bosai/jmatile/data/nowc/${meta.basetime}/none/${meta.validtime}/surf/hrpns/`
                 : null;
 
-            const jobs = [];
-            for (let ty = startTy; ty <= endTy; ty++) {
-                for (let tx = startTx; tx <= endTx; tx++) {
-                    const drawX = tx * TILE_SIZE - topLeftX;
-                    const drawY = ty * TILE_SIZE - topLeftY;
-                    jobs.push({ tx, ty, drawX, drawY });
+            const gsiStartTx = Math.floor(topLeftX / TILE_SIZE);
+            const gsiStartTy = Math.floor(topLeftY / TILE_SIZE);
+            const gsiEndTx = Math.floor((topLeftX + cssWidth) / TILE_SIZE);
+            const gsiEndTy = Math.floor((topLeftY + cssHeight) / TILE_SIZE);
+
+            const gsiJobs = [];
+            for (let ty = gsiStartTy; ty <= gsiEndTy; ty++) {
+                for (let tx = gsiStartTx; tx <= gsiEndTx; tx++) {
+                    gsiJobs.push({
+                        drawX: tx * TILE_SIZE - topLeftX,
+                        drawY: ty * TILE_SIZE - topLeftY,
+                        url: `${gsiBase}${mapZoom}/${tx}/${ty}.png`,
+                    });
                 }
             }
 
-            const urls = [];
-            jobs.forEach(({ tx, ty }) => {
-                urls.push(`${gsiBase}${zoom}/${tx}/${ty}.png`);
-                if (jmaBase) urls.push(`${jmaBase}${zoom}/${tx}/${ty}.png`);
-            });
+            const jmaJobs = [];
+            if (jmaBase) {
+                const jmaTopLeftX = topLeftX / radarScale;
+                const jmaTopLeftY = topLeftY / radarScale;
+                const jmaEndX = (topLeftX + cssWidth) / radarScale;
+                const jmaEndY = (topLeftY + cssHeight) / radarScale;
+                const jmaStartTx = Math.floor(jmaTopLeftX / TILE_SIZE);
+                const jmaStartTy = Math.floor(jmaTopLeftY / TILE_SIZE);
+                const jmaEndTx = Math.floor(jmaEndX / TILE_SIZE);
+                const jmaEndTy = Math.floor(jmaEndY / TILE_SIZE);
+                const drawSize = TILE_SIZE * radarScale;
+
+                for (let ty = jmaStartTy; ty <= jmaEndTy; ty++) {
+                    for (let tx = jmaStartTx; tx <= jmaEndTx; tx++) {
+                        jmaJobs.push({
+                            drawX: tx * drawSize - topLeftX,
+                            drawY: ty * drawSize - topLeftY,
+                            drawSize,
+                            url: `${jmaBase}${radarZoom}/${tx}/${ty}.png`,
+                        });
+                    }
+                }
+            }
+
+            const urls = [
+                ...gsiJobs.map((job) => job.url),
+                ...jmaJobs.map((job) => job.url),
+            ];
 
             return Promise.all(urls.map(loadImage)).then(() => {
                 if (drawToken !== radarDrawToken) return;
 
-                jobs.forEach(({ tx, ty, drawX, drawY }) => {
-                    const gsiImg = radarImageCache.get(`${gsiBase}${zoom}/${tx}/${ty}.png`);
+                gsiJobs.forEach(({ drawX, drawY, url }) => {
+                    const gsiImg = radarImageCache.get(url);
                     if (gsiImg && !(gsiImg instanceof Promise)) {
                         ctx.drawImage(gsiImg, drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
                 });
 
-                if (jmaBase) {
+                if (jmaJobs.length > 0) {
                     ctx.save();
-                    ctx.globalAlpha = 0.55;
-                    jobs.forEach(({ tx, ty, drawX, drawY }) => {
-                        const jmaImg = radarImageCache.get(`${jmaBase}${zoom}/${tx}/${ty}.png`);
+                    ctx.globalAlpha = 0.58;
+                    jmaJobs.forEach(({ drawX, drawY, drawSize, url }) => {
+                        const jmaImg = radarImageCache.get(url);
                         if (jmaImg && !(jmaImg instanceof Promise)) {
-                            ctx.drawImage(jmaImg, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                            ctx.drawImage(jmaImg, drawX, drawY, drawSize, drawSize);
                         }
                     });
                     ctx.restore();
                 }
 
-                const pinX = width / 2;
-                const pinY = height / 2;
+                const pinX = cssWidth / 2;
+                const pinY = cssHeight / 2;
                 ctx.fillStyle = '#4caf50';
                 ctx.beginPath();
                 ctx.arc(pinX, pinY - 7, 8, 0, Math.PI * 2);
@@ -1393,10 +1600,10 @@
 
                 if (!jmaBase) {
                     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-                    ctx.font = `${Math.max(11, width * 0.028)}px sans-serif`;
+                    ctx.font = `${Math.max(11, cssWidth * 0.028)}px sans-serif`;
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'bottom';
-                    ctx.fillText('レーダー待機中', width - 8, height - 8);
+                    ctx.fillText('レーダー待機中', cssWidth - 8, cssHeight - 8);
                 }
             });
         }
@@ -1494,6 +1701,7 @@
             renderClock();
             renderWeather();
             renderHourly();
+            renderDailyWeek();
             renderWeekCalendar();
             renderEvents();
             drawRadar();
@@ -1532,6 +1740,7 @@
             detectLayout();
             drawRadar();
             drawPressure();
+            renderDailyWeek();
             renderWeekCalendar();
             renderEvents();
         }
