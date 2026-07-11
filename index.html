@@ -162,9 +162,8 @@
         }
 
         .clock-display {
-            display: inline-flex;
-            align-items: baseline;
-            justify-content: center;
+            position: relative;
+            display: inline-block;
             line-height: 1;
             white-space: nowrap;
             font-size: calc(var(--u) * 8.8);
@@ -178,7 +177,9 @@
         }
 
         .seconds {
-            margin-left: 0.2em;
+            position: absolute;
+            left: calc(100% + 0.22em);
+            bottom: 0.14em;
             color: var(--muted);
             font-size: 0.36em;
             font-weight: 200;
@@ -244,6 +245,10 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             text-align: center;
+        }
+
+        .condition.is-hidden {
+            display: none;
         }
 
         .temp {
@@ -413,9 +418,15 @@
         }
 
         .daily-week-dow {
-            color: var(--muted);
-            font-size: calc(var(--u) * 0.62);
+            color: var(--text);
+            font-size: calc(var(--u) * 0.82);
+            font-weight: 600;
             line-height: 1;
+            letter-spacing: 0.04em;
+        }
+
+        .daily-week-cell.today .daily-week-dow {
+            color: var(--accent);
         }
 
         .daily-week-icon {
@@ -426,18 +437,26 @@
         .daily-week-temps {
             display: flex;
             gap: 0.12em;
-            font-size: calc(var(--u) * 0.44);
+            font-size: calc(var(--u) * 0.78);
             font-weight: 400;
             line-height: 1;
+            font-variant-numeric: tabular-nums;
         }
 
-        .daily-week-temps .temp-high { color: var(--temp-high); }
-        .daily-week-temps .temp-low { color: var(--temp-low); }
+        .daily-week-temp-max {
+            color: var(--temp-high);
+        }
+
+        .daily-week-temp-min {
+            color: var(--temp-low);
+        }
 
         .daily-week-pop {
             color: var(--pop-color);
-            font-size: calc(var(--u) * 0.58);
+            font-size: calc(var(--u) * 0.72);
+            font-weight: 500;
             line-height: 1;
+            font-variant-numeric: tabular-nums;
         }
 
         html[data-layout="nest-hub"] .hourly-grid {
@@ -1055,6 +1074,31 @@
             return '☁️';
         }
 
+        function conditionLabelJa(condition) {
+            const labels = {
+                Clear: '晴れ',
+                Clouds: 'くもり',
+                Rain: '雨',
+                Snow: '雪',
+                Thunder: '雷雨',
+                Fog: '霧',
+                Clear_Occ_Clouds: '晴れ時々くもり',
+                Clear_Tmp_Rain: '晴れ一時雨',
+                Clear_To_Clouds: '晴れのちくもり',
+                Clear_To_Rain: '晴れのち雨',
+                Clouds_Occ_Clear: 'くもり時々晴れ',
+                Clouds_Tmp_Rain: 'くもり一時雨',
+                Clouds_To_Clear: 'くもりのち晴れ',
+                Clouds_To_Rain: 'くもりのち雨',
+                Rain_Occ_Clear: '雨時々晴れ',
+                Rain_To_Clear: '雨のち晴れ',
+                Rain_To_Clouds: '雨のちくもり',
+                Rain_Occ_Clouds: '雨時々くもり',
+            };
+            const key = cleanText(condition, '');
+            return labels[key] || '';
+        }
+
         function colorToCss(color) {
             if (typeof color === 'string' && color.trim().startsWith('#')) return color.trim();
             if (typeof color !== 'number') return '#62c8ff';
@@ -1153,6 +1197,7 @@
                 setText('currentIcon', '--');
                 setText('currentTemp', '--℃');
                 setText('condition', 'スマホからのデータを待っています');
+                el('condition')?.classList.remove('is-hidden');
                 setHtml('tempMax', `--<span class="temp-unit">℃</span>`);
                 setHtml('tempMin', `--<span class="temp-unit">℃</span>`);
                 setText('pop', '降水 --%');
@@ -1167,7 +1212,9 @@
 
             setText('currentIcon', weatherEmoji(weather.condition));
             setText('currentTemp', temp === null ? '--℃' : `${temp}℃`);
-            setText('condition', cleanText(weather.condition, ''));
+            const conditionJa = conditionLabelJa(weather.condition);
+            setText('condition', conditionJa);
+            el('condition')?.classList.toggle('is-hidden', !conditionJa);
             setHtml('tempMax', `${tempMax === null ? '--' : tempMax}<span class="temp-unit">℃</span>`);
             setHtml('tempMin', `${tempMin === null ? '--' : tempMin}<span class="temp-unit">℃</span>`);
             setText('pop', pop === null ? '降水 --%' : `降水 ${pop}%`);
@@ -1246,8 +1293,8 @@
                         <div class="daily-week-dow">${dayNames[index]}</div>
                         <div class="daily-week-icon">${weatherEmoji(forecast.condition)}</div>
                         <div class="daily-week-temps">
-                            <span class="temp-high">${tempMax === null ? '--' : tempMax}°</span>
-                            <span class="temp-low">${tempMin === null ? '--' : tempMin}°</span>
+                            <span class="daily-week-temp-max">${tempMax === null ? '--' : tempMax}°</span>
+                            <span class="daily-week-temp-min">${tempMin === null ? '--' : tempMin}°</span>
                         </div>
                         <div class="daily-week-pop">${pop === null ? '--' : pop}%</div>
                     </div>
