@@ -1039,8 +1039,10 @@
         const el = (id) => document.getElementById(id);
         const fmt2 = (n) => String(n).padStart(2, '0');
         const fmtClockTime = (date) => `${date.getHours()}:${fmt2(date.getMinutes())}`;
-        let clockAlignTimer = null;
         let clockPollTimer = null;
+        let clockRaf = null;
+        let clockWorker = null;
+        let clockWorkerUrl = null;
         let lastClockSecond = -1;
         let lastClockMinute = '';
         let lastClockDate = '';
@@ -1119,23 +1121,28 @@
             `;
         }
 
-        function renderSpotlightPanel(target, spotlight, nowMs) {
-            if (!target || !spotlight) {
-                if (target) target.innerHTML = '';
-                return;
-            }
-
+        function buildSpotlightPanelHtml(spotlight, nowMs) {
             const { event, start, end } = spotlight;
-            const color = colorToCss(event.color);
             const title = escapeHtml(cleanText(event.title, '無題'));
-            target.style.borderLeftColor = color;
-            target.style.background = `linear-gradient(145deg, ${color}33, rgba(255, 255, 255, 0.05))`;
-            target.innerHTML = `
+            return `
                 <div class="week-spotlight-label">まもなく開始</div>
                 <div class="week-spotlight-countdown">${escapeHtml(formatSpotlightCountdown(nowMs, start))}</div>
                 <div class="week-spotlight-title">${title}</div>
                 ${buildSpotlightMetaHtml(event, start, end)}
             `;
+        }
+
+        function renderSpotlightPanel(target, spotlight, nowMs, html) {
+            if (!target || !spotlight) {
+                if (target) target.innerHTML = '';
+                return;
+            }
+
+            const { event } = spotlight;
+            const color = colorToCss(event.color);
+            target.style.borderLeftColor = color;
+            target.style.background = `linear-gradient(145deg, ${color}33, rgba(255, 255, 255, 0.05))`;
+            target.innerHTML = html || buildSpotlightPanelHtml(spotlight, nowMs);
         }
 
         function getWeekDayIndex(dateMs) {
@@ -1188,6 +1195,14 @@
             }
         }
 
+        function getSpotlightPollDelay(nowMs) {
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            const spotlight = findSpotlightEvent(events, nowMs);
+            if (!spotlight) return 5000;
+            if (isSpotlightPhase(nowMs, spotlight.start)) return 1000;
+            return 3000;
+        }
+
         function updateCalendarSpotlight() {
             const grid = el('weekGrid');
             const panel = el('weekSpotlight');
@@ -1209,7 +1224,10 @@
                 applySpotlightDayFocus(grid, active || grid.classList.contains('spotlight-show'), dayIndex);
             }
             if (active && spotlight) {
-                renderSpotlightPanel(panel, spotlight, nowMs);
+                const nextPanel = buildSpotlightPanelHtml(spotlight, nowMs);
+                if (panel && panel.innerHTML !== nextPanel) {
+                    renderSpotlightPanel(panel, spotlight, nowMs, nextPanel);
+                }
             }
 
             if (nextKey !== lastSpotlightKey) {
@@ -1219,15 +1237,21 @@
 
         function startSpotlightLoop() {
             if (spotlightTimer) {
-                clearInterval(spotlightTimer);
+                clearTimeout(spotlightTimer);
+                spotlightTimer = null;
             }
-            updateCalendarSpotlight();
-            spotlightTimer = setInterval(updateCalendarSpotlight, 250);
+
+            const loop = () => {
+                updateCalendarSpotlight();
+                spotlightTimer = setTimeout(loop, getSpotlightPollDelay(Date.now()));
+            };
+
+            loop();
         }
 
         function stopSpotlightLoop() {
             if (spotlightTimer) {
-                clearInterval(spotlightTimer);
+                clearTimeout(spotlightTimer);
                 spotlightTimer = null;
             }
         }
@@ -1400,13 +1424,21 @@
         }
 
         function stopLocalClock() {
-            if (clockAlignTimer) {
-                clearTimeout(clockAlignTimer);
-                clockAlignTimer = null;
+            if (clockRaf) {
+                cancelAnimationFrame(clockRaf);
+                clockRaf = null;
             }
             if (clockPollTimer) {
                 clearTimeout(clockPollTimer);
                 clockPollTimer = null;
+            }
+            if (clockWorker) {
+                clockWorker.terminate();
+                clockWorker = null;
+            }
+            if (clockWorkerUrl) {
+                URL.revokeObjectURL(clockWorkerUrl);
+                clockWorkerUrl = null;
             }
         }
 
@@ -1427,7 +1459,7 @@
             }
 
             const { clockTimeNode, clockSecondsNode, clockDateNode } = getClockNodes();
-            if (clockSecondsNode && clockSecondsNode.textContent !== secStr) {
+            if (clockSecondsNode) {
                 clockSecondsNode.textContent = secStr;
             }
             if (timeStr !== lastClockMinute && clockTimeNode) {
@@ -1441,30 +1473,38 @@
             lastClockSecond = sec;
         }
 
+        function startClockWorker() {
+            if (typeof Worker === 'undefined') return;
+            try {
+                const workerCode = 'setInterval(function(){postMessage(1);},1000);';
+                clockWorkerUrl = URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' }));
+                clockWorker = new Worker(clockWorkerUrl);
+                clockWorker.onmessage = () => renderClock();
+            } catch (error) {
+                console.warn('Clock worker unavailable', error);
+            }
+        }
+
         function startLocalClock() {
             stopLocalClock();
             lastClockSecond = -1;
+            renderClock();
 
-            const tick = () => renderClock();
-
-            const scheduleAlign = () => {
-                const msToNext = Math.max(1, 1000 - (Date.now() % 1000));
-                clockAlignTimer = setTimeout(() => {
-                    tick();
-                    scheduleAlign();
-                }, msToNext);
+            const rafLoop = () => {
+                renderClock();
+                clockRaf = requestAnimationFrame(rafLoop);
             };
+            clockRaf = requestAnimationFrame(rafLoop);
 
-            const schedulePoll = () => {
+            startClockWorker();
+
+            const scheduleBackupPoll = () => {
                 clockPollTimer = setTimeout(() => {
-                    tick();
-                    schedulePoll();
-                }, 200);
+                    renderClock();
+                    scheduleBackupPoll();
+                }, 125);
             };
-
-            tick();
-            scheduleAlign();
-            schedulePoll();
+            scheduleBackupPoll();
         }
 
         function renderWeather() {
@@ -2005,8 +2045,10 @@
             renderDailyWeek();
             renderWeekCalendar();
             renderEvents();
-            drawRadar();
-            drawPressure();
+            setTimeout(() => {
+                drawRadar();
+                drawPressure();
+            }, 0);
         }
 
         window.__setWeatherInfoState = (nextState) => {
