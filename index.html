@@ -455,6 +455,7 @@
         }
 
         .week-cal-wrap {
+            position: relative;
             flex: 1;
             min-width: 0;
             min-height: 0;
@@ -462,6 +463,21 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+
+        .week-cal-shade {
+            display: none;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 2;
+            background: var(--bg);
+            pointer-events: none;
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-shade {
+            display: block;
         }
 
         .week-cal {
@@ -495,15 +511,14 @@
             top: 0;
             right: 0;
             bottom: 0;
-            width: 46%;
-            min-width: calc(var(--u) * 34);
+            left: var(--spot-panel-left, 50%);
             z-index: 5;
             display: flex;
             flex-direction: column;
             justify-content: center;
             gap: calc(var(--u) * 0.72);
             padding: calc(var(--u) * 1.05) calc(var(--u) * 1.15);
-            border-radius: calc(var(--u) * 1.1);
+            border-radius: calc(var(--u) * 1.1) 0 0 calc(var(--u) * 1.1);
             border: 1px solid rgba(255, 255, 255, 0.16);
             border-left-width: calc(var(--u) * 0.42);
             background: linear-gradient(145deg, rgba(98, 200, 255, 0.16), rgba(255, 255, 255, 0.05));
@@ -1137,41 +1152,72 @@
             return Math.max(0, Math.min(6, index));
         }
 
-        function captureSpotlightMetrics(grid) {
+        function measureSpotlightWindow(grid) {
             const wrap = grid.querySelector('.week-cal-wrap');
+            const corner = grid.querySelector('.week-cal-corner');
             const day0 = grid.querySelector('.week-cal-day-head[data-week-day="0"]');
             const day1 = grid.querySelector('.week-cal-day-head[data-week-day="1"]');
             const times = grid.querySelector('.week-cal-times');
-            if (!wrap || !day0 || !day1 || !times) return false;
+            if (!wrap || !day0 || !day1) return null;
 
-            const dayColW = Math.max(1, Math.round(day1.getBoundingClientRect().left - day0.getBoundingClientRect().left));
-            const gutterW = Math.round(times.offsetWidth);
-            const calW = Math.round(wrap.clientWidth);
+            const wrapRect = wrap.getBoundingClientRect();
+            const day0Rect = day0.getBoundingClientRect();
+            const day1Rect = day1.getBoundingClientRect();
+            const gutterW = Math.max(1, Math.round(day0Rect.left - wrapRect.left));
+            const dayColW = Math.max(1, Math.round(day1Rect.left - day0Rect.left));
+            const visibleW = Math.max(gutterW + dayColW, Math.round(day1Rect.left - wrapRect.left));
 
-            grid.dataset.spotDayColW = String(dayColW);
-            grid.dataset.spotGutterW = String(gutterW);
-            grid.dataset.spotCalW = String(calW);
-            wrap.style.setProperty('--spot-day-col-w', `${dayColW}px`);
-            wrap.style.setProperty('--spot-gutter-w', `${gutterW}px`);
-            wrap.style.setProperty('--spot-cal-w', `${calW}px`);
+            let timeGutterW = gutterW;
+            if (corner && times) {
+                timeGutterW = Math.max(
+                    Math.round(corner.getBoundingClientRect().width),
+                    Math.round(times.getBoundingClientRect().width),
+                );
+            }
+
+            return {
+                gutterW,
+                dayColW,
+                visibleW,
+                timeGutterW,
+                calW: Math.round(wrap.clientWidth),
+            };
+        }
+
+        function captureSpotlightMetrics(grid) {
+            const metrics = measureSpotlightWindow(grid);
+            const wrap = grid.querySelector('.week-cal-wrap');
+            if (!metrics || !wrap) return false;
+
+            grid.dataset.spotGutterW = String(metrics.gutterW);
+            grid.dataset.spotDayColW = String(metrics.dayColW);
+            grid.dataset.spotVisibleW = String(metrics.visibleW);
+            grid.dataset.spotCalW = String(metrics.calW);
+            wrap.style.setProperty('--spot-gutter-w', `${metrics.timeGutterW}px`);
+            wrap.style.setProperty('--spot-day-col-w', `${metrics.dayColW}px`);
+            wrap.style.setProperty('--spot-cal-w', `${metrics.calW}px`);
             return true;
         }
 
         function clearSpotlightMetrics(grid) {
             const wrap = grid.querySelector('.week-cal-wrap');
-            delete grid.dataset.spotDayColW;
             delete grid.dataset.spotGutterW;
+            delete grid.dataset.spotDayColW;
+            delete grid.dataset.spotVisibleW;
             delete grid.dataset.spotCalW;
             if (wrap) {
-                wrap.style.removeProperty('--spot-day-col-w');
                 wrap.style.removeProperty('--spot-gutter-w');
+                wrap.style.removeProperty('--spot-day-col-w');
                 wrap.style.removeProperty('--spot-cal-w');
             }
+            grid.style.removeProperty('--spot-panel-left');
         }
 
         function syncSpotlightCalendarView(grid, dayIndex, active) {
             const wrap = grid?.querySelector('.week-cal-wrap');
             const cal = grid?.querySelector('.week-cal');
+            const shade = grid?.querySelector('.week-cal-shade');
+            const panel = el('weekSpotlight');
             if (!wrap || !cal) return;
 
             const showing = active
@@ -1181,22 +1227,40 @@
             if (!showing || dayIndex < 0) {
                 wrap.style.removeProperty('clip-path');
                 cal.style.transform = '';
+                if (shade) {
+                    shade.style.left = '';
+                }
+                if (panel) {
+                    panel.style.left = '';
+                }
+                grid.style.removeProperty('--spot-panel-left');
                 return;
             }
 
-            if (!grid.dataset.spotDayColW && !captureSpotlightMetrics(grid)) return;
+            const metrics = measureSpotlightWindow(grid);
+            if (!metrics) return;
 
-            const dayColW = Number(grid.dataset.spotDayColW);
-            const times = grid.querySelector('.week-cal-times');
-            if (!times || !Number.isFinite(dayColW) || dayColW <= 0) return;
+            grid.dataset.spotGutterW = String(metrics.gutterW);
+            grid.dataset.spotDayColW = String(metrics.dayColW);
+            grid.dataset.spotVisibleW = String(metrics.visibleW);
+
+            const dayColW = metrics.dayColW;
+            cal.style.transform = `translateX(${-dayIndex * dayColW}px)`;
 
             const wrapRect = wrap.getBoundingClientRect();
-            const timesRect = times.getBoundingClientRect();
-            const clipLeft = Math.max(0, Math.round(timesRect.left - wrapRect.left));
-            const clipRight = Math.max(0, Math.round(wrapRect.width - clipLeft - dayColW));
+            const clipRight = Math.max(0, Math.round(wrapRect.width - metrics.visibleW));
+            wrap.style.clipPath = `inset(0 ${clipRight}px 0 0)`;
 
-            wrap.style.clipPath = `inset(0 ${clipRight}px 0 ${clipLeft}px)`;
-            cal.style.transform = `translateX(${-dayIndex * dayColW}px)`;
+            if (shade) {
+                shade.style.left = `${metrics.visibleW}px`;
+            }
+
+            const gridRect = grid.getBoundingClientRect();
+            const panelLeft = Math.round(wrapRect.left - gridRect.left + metrics.visibleW);
+            grid.style.setProperty('--spot-panel-left', `${panelLeft}px`);
+            if (panel) {
+                panel.style.left = `${panelLeft}px`;
+            }
         }
 
         function applySpotlightDayFocus(grid, active, dayIndex) {
@@ -1869,6 +1933,7 @@
             grid.innerHTML = `
                 <div class="week-grid-layout">
                     <div class="week-cal-wrap">
+                        <div class="week-cal-shade" aria-hidden="true"></div>
                         <div class="week-cal">
                             <div class="week-cal-head">
                                 <div class="week-cal-corner"></div>
