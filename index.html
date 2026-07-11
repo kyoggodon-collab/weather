@@ -80,7 +80,7 @@
         }
 
         .left { grid-template-rows: auto auto 1fr; }
-        .main-area { grid-template-rows: calc(var(--u) * 17) 1fr auto; }
+        .main-area { grid-template-rows: calc(var(--u) * 15.5) 1fr auto; }
         .top-row {
             display: grid;
             grid-template-columns: 1.02fr 0.98fr;
@@ -168,6 +168,7 @@
             white-space: nowrap;
             font-size: calc(var(--u) * 8.8);
             font-variant-numeric: tabular-nums;
+            contain: layout style;
         }
 
         .time {
@@ -301,6 +302,7 @@
             display: flex;
             flex-direction: column;
             min-height: 0;
+            padding: calc(var(--u) * 0.45);
         }
 
         .radar-body {
@@ -312,31 +314,29 @@
             background: rgba(0, 0, 0, 0.35);
         }
 
-        #radarCanvas {
-            display: block;
-        }
-
-        .radar-credit {
-            margin-top: calc(var(--u) * 0.25);
-            color: var(--dim);
-            font-size: calc(var(--u) * 0.72);
-            text-align: right;
+        .radar-time {
+            position: absolute;
+            right: calc(var(--u) * 0.35);
+            bottom: calc(var(--u) * 0.28);
+            color: rgba(255, 255, 255, 0.78);
+            font-size: calc(var(--u) * 0.68);
+            line-height: 1;
+            pointer-events: none;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
         }
 
         .hourly-panel,
         .graph-panel,
         .daily-panel,
         .schedule-panel,
-        .radar-panel,
         .week-panel {
-            padding: calc(var(--u) * 0.85) calc(var(--u) * 0.95);
+            padding: calc(var(--u) * 0.55) calc(var(--u) * 0.65);
         }
 
         .hourly-panel {
             display: flex;
             flex-direction: column;
             min-height: 0;
-            padding-bottom: calc(var(--u) * 0.55);
         }
 
         .hourly-panel-body {
@@ -344,38 +344,20 @@
             min-height: 0;
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.35);
-        }
-
-        .panel-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: calc(var(--u) * 0.6);
-            margin-bottom: calc(var(--u) * 0.45);
-            color: var(--accent);
-            font-size: calc(var(--u) * 1.25);
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        .panel-subtitle {
-            color: var(--dim);
-            font-size: calc(var(--u) * 0.9);
-            font-weight: 400;
+            gap: calc(var(--u) * 0.28);
         }
 
         .hourly-grid {
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: calc(var(--u) * 0.28);
-            height: calc(var(--u) * 5.8);
+            height: calc(var(--u) * 6.4);
             flex-shrink: 0;
         }
 
         .daily-week-grid {
             flex: 1;
-            min-height: calc(var(--u) * 3.6);
+            min-height: calc(var(--u) * 4.2);
             display: grid;
             grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: calc(var(--u) * 0.22);
@@ -477,10 +459,22 @@
             font-weight: 500;
         }
 
+        .graph-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
         .graph-body {
-            height: calc(100% - calc(var(--u) * 2.6));
+            flex: 1;
             min-height: 0;
             position: relative;
+        }
+
+        #radarCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         #pressureCanvas {
@@ -544,8 +538,13 @@
 
         .week-cal-day-head.sunday { color: #ff9a8f; }
         .week-cal-day-head.saturday { color: #8fc8ff; }
-        .week-cal-day-head.today {
+        .week-cal-day-head.today:not(.sunday):not(.saturday) {
             color: var(--text);
+            font-weight: 500;
+        }
+
+        .week-cal-day-head.today.sunday,
+        .week-cal-day-head.today.saturday {
             font-weight: 500;
         }
 
@@ -561,12 +560,20 @@
             height: calc(var(--u) * 2);
             border-radius: 999px;
             font-size: calc(var(--u) * 1.12);
-            color: var(--text);
+            color: inherit;
             line-height: 1;
         }
 
         .week-cal-day-head.today .week-date-num {
             background: rgba(98, 200, 255, 0.22);
+        }
+
+        .week-cal-day-head.today.sunday .week-date-num {
+            background: rgba(255, 154, 143, 0.24);
+        }
+
+        .week-cal-day-head.today.saturday .week-date-num {
+            background: rgba(143, 200, 255, 0.24);
         }
 
         .week-cal-allday {
@@ -763,11 +770,9 @@
         }
 
         .schedule-panel {
+            display: flex;
             flex-direction: column;
-        }
-
-        .schedule-panel .panel-title {
-            margin-bottom: calc(var(--u) * 0.85);
+            min-height: 0;
         }
 
         .event-list {
@@ -777,7 +782,6 @@
             flex-direction: column;
             gap: calc(var(--u) * 0.75);
             overflow: hidden;
-            padding-top: calc(var(--u) * 0.15);
         }
 
         .event-card {
@@ -867,23 +871,16 @@
             </section>
 
             <section class="panel radar-panel">
-                <div class="panel-title">
-                    <span>雨雲レーダー</span>
-                    <span id="radarTime" class="panel-subtitle"></span>
-                </div>
                 <div class="radar-body">
                     <canvas id="radarCanvas"></canvas>
+                    <div id="radarTime" class="radar-time"></div>
                 </div>
-                <div class="radar-credit">出典: 国土地理院 / レーダー: 気象庁</div>
             </section>
         </section>
 
         <section class="main-area">
             <div class="top-row">
                 <section class="panel hourly-panel">
-                    <div class="panel-title">
-                        <span>天気</span>
-                    </div>
                     <div class="hourly-panel-body">
                         <div id="hourlyGrid" class="hourly-grid"></div>
                         <div id="dailyWeekGrid" class="daily-week-grid"></div>
@@ -891,10 +888,6 @@
                 </section>
 
                 <section class="panel graph-panel">
-                    <div class="panel-title">
-                        <span>Pressure</span>
-                        <span class="panel-subtitle">hPa</span>
-                    </div>
                     <div class="graph-body">
                         <canvas id="pressureCanvas"></canvas>
                     </div>
@@ -902,18 +895,10 @@
             </div>
 
             <section class="panel week-panel">
-                <div class="panel-title">
-                    <span>週間カレンダー</span>
-                    <span id="weekRange" class="panel-subtitle">日曜 - 土曜</span>
-                </div>
                 <div id="weekGrid" class="week-grid"></div>
             </section>
 
             <section class="panel schedule-panel">
-                <div class="panel-title">
-                    <span>Schedule</span>
-                    <span id="eventCount" class="panel-subtitle">0件</span>
-                </div>
                 <div id="eventList" class="event-list"></div>
             </section>
 
@@ -933,9 +918,15 @@
         const el = (id) => document.getElementById(id);
         const fmt2 = (n) => String(n).padStart(2, '0');
         const fmtClockTime = (date) => `${date.getHours()}:${fmt2(date.getMinutes())}`;
-        let clockTimer = null;
+        let clockAlignTimer = null;
+        let clockPollTimer = null;
+        let lastClockSecond = -1;
         let lastClockMinute = '';
         let lastClockDate = '';
+        let clockTimeNode = null;
+        let clockSecondsNode = null;
+        let clockDateNode = null;
+        let renderFrame = null;
         const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
 
         function detectLayout() {
@@ -1117,10 +1108,29 @@
             return hourly.slice(start, start + 6);
         }
 
+        function getClockNodes() {
+            if (!clockTimeNode) clockTimeNode = el('time');
+            if (!clockSecondsNode) clockSecondsNode = el('seconds');
+            if (!clockDateNode) clockDateNode = el('date');
+            return { clockTimeNode, clockSecondsNode, clockDateNode };
+        }
+
+        function stopLocalClock() {
+            if (clockAlignTimer) {
+                clearTimeout(clockAlignTimer);
+                clockAlignTimer = null;
+            }
+            if (clockPollTimer) {
+                clearTimeout(clockPollTimer);
+                clockPollTimer = null;
+            }
+        }
+
         function renderClock() {
             const now = new Date();
+            const sec = now.getSeconds();
             const timeStr = fmtClockTime(now);
-            const secStr = fmt2(now.getSeconds());
+            const secStr = fmt2(sec);
             const dateStr = now.toLocaleDateString('ja-JP', {
                 year: 'numeric',
                 month: 'long',
@@ -1128,28 +1138,49 @@
                 weekday: 'short',
             });
 
-            setText('seconds', secStr);
-            if (timeStr !== lastClockMinute) {
-                setText('time', timeStr);
+            if (sec === lastClockSecond && timeStr === lastClockMinute && dateStr === lastClockDate) {
+                return;
+            }
+
+            const { clockTimeNode, clockSecondsNode, clockDateNode } = getClockNodes();
+            if (clockSecondsNode && clockSecondsNode.textContent !== secStr) {
+                clockSecondsNode.textContent = secStr;
+            }
+            if (timeStr !== lastClockMinute && clockTimeNode) {
+                clockTimeNode.textContent = timeStr;
                 lastClockMinute = timeStr;
             }
-            if (dateStr !== lastClockDate) {
-                setText('date', dateStr);
+            if (dateStr !== lastClockDate && clockDateNode) {
+                clockDateNode.textContent = dateStr;
                 lastClockDate = dateStr;
             }
+            lastClockSecond = sec;
         }
 
         function startLocalClock() {
-            if (clockTimer) {
-                clearInterval(clockTimer);
-                clockTimer = null;
-            }
-            renderClock();
-            const msToNextSecond = 1000 - (Date.now() % 1000);
-            setTimeout(() => {
-                renderClock();
-                clockTimer = setInterval(renderClock, 1000);
-            }, msToNextSecond);
+            stopLocalClock();
+            lastClockSecond = -1;
+
+            const tick = () => renderClock();
+
+            const scheduleAlign = () => {
+                const msToNext = Math.max(1, 1000 - (Date.now() % 1000));
+                clockAlignTimer = setTimeout(() => {
+                    tick();
+                    scheduleAlign();
+                }, msToNext);
+            };
+
+            const schedulePoll = () => {
+                clockPollTimer = setTimeout(() => {
+                    tick();
+                    schedulePoll();
+                }, 200);
+            };
+
+            tick();
+            scheduleAlign();
+            schedulePoll();
         }
 
         function renderWeather() {
@@ -1269,7 +1300,6 @@
                 .sort((a, b) => Number(a.start) - Number(b.start))
                 .slice(0, getMaxEvents());
 
-            setText('eventCount', `${upcoming.length}件`);
             if (upcoming.length === 0) {
                 list.innerHTML = '<div class="empty">予定はありません</div>';
                 return;
@@ -1380,10 +1410,6 @@
             }
 
             const weekStart = startOfWeekSunday(new Date());
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6);
-            setText('weekRange', `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`);
-
             const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
             const today = new Date();
             const days = Array.from({ length: 7 }, (_, index) => {
@@ -1686,6 +1712,14 @@
             });
         }
 
+        function scheduleRender() {
+            if (renderFrame !== null) return;
+            renderFrame = requestAnimationFrame(() => {
+                renderFrame = null;
+                render();
+            });
+        }
+
         function render() {
             renderWeather();
             renderHourly();
@@ -1698,7 +1732,7 @@
 
         window.__setWeatherInfoState = (nextState) => {
             uiState = nextState || { calendarEvents: [] };
-            render();
+            scheduleRender();
         };
 
         function startCastReceiver() {
@@ -1711,7 +1745,7 @@
             context.addCustomMessageListener(NAMESPACE, (event) => {
                 try {
                     uiState = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                    render();
+                    scheduleRender();
                 } catch (error) {
                     console.error('Failed to parse cast message', error);
                 }
