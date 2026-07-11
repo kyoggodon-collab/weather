@@ -48,6 +48,10 @@
             backface-visibility: hidden;
         }
 
+        html.cast-receiver .graph-panel {
+            contain: layout style;
+        }
+
         html.cast-receiver .graph-body {
             contain: layout style paint;
         }
@@ -468,29 +472,28 @@
         }
 
         .graph-panel.mode-event {
-            overflow: visible;
             z-index: 1;
-        }
-
-        .graph-panel.mode-event .graph-body {
-            overflow: visible;
         }
 
         .graph-view-events {
             position: relative;
         }
 
-        .graph-panel.mode-event .graph-view-events::before {
-            content: '';
+        .event-accent-bar {
+            display: none;
             position: absolute;
-            left: calc(-1 * var(--u) * 0.55 - var(--u) * 0.14);
-            top: calc(-1 * var(--u) * 0.55);
-            bottom: calc(-1 * var(--u) * 0.55);
-            width: calc(var(--u) * 0.28);
-            background: var(--event-accent, var(--accent));
+            left: calc(var(--u) * 0.14);
+            top: calc(var(--u) * 0.42);
+            bottom: calc(var(--u) * 0.42);
+            width: calc(var(--u) * 0.24);
             border-radius: 999px;
+            background: var(--event-accent, var(--accent));
             pointer-events: none;
-            z-index: 3;
+            z-index: 5;
+        }
+
+        .graph-panel.mode-event .event-accent-bar {
+            display: block;
         }
 
         #pressureCanvas {
@@ -1018,6 +1021,7 @@
                 </section>
 
                 <section id="graphPanel" class="panel graph-panel">
+                    <div id="eventAccentBar" class="event-accent-bar" aria-hidden="true"></div>
                     <div class="graph-body">
                         <div class="graph-view graph-view-pressure">
                             <canvas id="pressureCanvas"></canvas>
@@ -1232,11 +1236,15 @@
         }
 
         function applySpotlightAccent(graphPanel, group, activeIndex) {
+            const bar = el('eventAccentBar');
             if (!graphPanel || !group || activeIndex < 0) {
                 graphPanel?.style.removeProperty('--event-accent');
+                if (bar) bar.style.backgroundColor = '';
                 return;
             }
-            graphPanel.style.setProperty('--event-accent', colorToCss(group.items[activeIndex].event.color));
+            const color = colorToCss(group.items[activeIndex].event.color);
+            graphPanel.style.setProperty('--event-accent', color);
+            if (bar) bar.style.backgroundColor = color;
         }
 
         function renderEventCards(cardsRoot, group, nowMs, activeIndex) {
@@ -1275,13 +1283,13 @@
             const activeIndex = group ? getSpotlightCardIndex(group, nowMs) : -1;
 
             graphPanel.classList.toggle('mode-event', showEvent);
+            applySpotlightAccent(graphPanel, showEvent ? group : null, showEvent ? activeIndex : -1);
 
             const groupKey = group
                 ? group.items.map(({ event, start }) => `${event.id}:${start}`).join(',')
                 : '';
 
             if (!showEvent) {
-                graphPanel.style.removeProperty('--event-accent');
                 if (lastSpotlightGroupKey) {
                     cardsRoot.innerHTML = '';
                     lastSpotlightGroupKey = '';
@@ -1293,7 +1301,6 @@
 
             if (groupKey !== lastSpotlightGroupKey) {
                 renderEventCards(cardsRoot, group, nowMs, activeIndex);
-                applySpotlightAccent(graphPanel, group, activeIndex);
                 lastSpotlightGroupKey = groupKey;
                 lastSpotlightActiveIndex = activeIndex;
                 lastSpotlightMinuteKey = '';
@@ -1302,7 +1309,6 @@
 
             if (activeIndex !== lastSpotlightActiveIndex) {
                 setActiveEventCard(cardsRoot, activeIndex);
-                applySpotlightAccent(graphPanel, group, activeIndex);
                 lastSpotlightActiveIndex = activeIndex;
             }
 
