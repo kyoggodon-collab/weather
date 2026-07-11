@@ -448,8 +448,9 @@
         .week-grid-layout {
             flex: 1;
             min-height: 0;
+            height: 100%;
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
             gap: 0;
             overflow: hidden;
             transition: grid-template-columns 0.55s ease, gap 0.55s ease;
@@ -463,16 +464,20 @@
         .week-cal-wrap {
             min-width: 0;
             min-height: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
-            transition: opacity 0.45s ease, transform 0.55s ease;
+            opacity: 1;
+            transition: opacity 0.55s ease;
         }
 
-        .week-grid.spotlight-active .week-cal-wrap {
-            transform: translateX(0);
+        .week-grid.spotlight-active:not(.spotlight-show) .week-cal-wrap {
+            opacity: 0.92;
         }
 
         .week-spotlight {
-            display: none;
+            display: flex;
             min-width: 0;
             min-height: 0;
             flex-direction: column;
@@ -484,14 +489,36 @@
             background: linear-gradient(145deg, rgba(98, 200, 255, 0.16), rgba(255, 255, 255, 0.05));
             box-shadow: 0 calc(var(--u) * 0.8) calc(var(--u) * 2.2) rgba(0, 0, 0, 0.28);
             opacity: 0;
-            transform: translateX(calc(var(--u) * 1.2));
-            transition: opacity 0.45s ease, transform 0.55s ease;
+            overflow: hidden;
+            pointer-events: none;
+            transition: opacity 0.55s ease;
         }
 
-        .week-grid.spotlight-active .week-spotlight {
-            display: flex;
+        .week-grid.spotlight-show .week-spotlight {
             opacity: 1;
-            transform: translateX(0);
+            pointer-events: auto;
+        }
+
+        .week-grid.spotlight-active .week-cal-head,
+        .week-grid.spotlight-active .week-cal-allday {
+            grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
+            transition: grid-template-columns 0.55s ease;
+        }
+
+        .week-grid.spotlight-active .week-cal-day-head:not(.spotlight-focus),
+        .week-grid.spotlight-active .week-cal-allday-col:not(.spotlight-focus),
+        .week-grid.spotlight-active .week-cal-col:not(.spotlight-focus) {
+            opacity: 0;
+            visibility: hidden;
+            overflow: hidden;
+            pointer-events: none;
+            transition: opacity 0.45s ease, visibility 0.45s ease;
+        }
+
+        .week-grid.spotlight-show.spotlight-active .week-cal-day-head:not(.spotlight-focus),
+        .week-grid.spotlight-show.spotlight-active .week-cal-allday-col:not(.spotlight-focus),
+        .week-grid.spotlight-show.spotlight-active .week-cal-col:not(.spotlight-focus) {
+            display: none;
         }
 
         .week-spotlight-label {
@@ -515,6 +542,33 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .week-spotlight-meta {
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.28);
+        }
+
+        .week-spotlight-meta-row {
+            display: grid;
+            grid-template-columns: calc(var(--u) * 3.2) minmax(0, 1fr);
+            gap: calc(var(--u) * 0.35);
+            align-items: baseline;
+            font-size: calc(var(--u) * 1.12);
+            line-height: 1.35;
+        }
+
+        .week-spotlight-meta-label {
+            color: var(--dim);
+            font-size: calc(var(--u) * 0.92);
+            white-space: nowrap;
+        }
+
+        .week-spotlight-meta-value {
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            word-break: break-word;
+        }
+
         .week-spotlight-title {
             color: var(--text);
             font-size: calc(var(--u) * 2.45);
@@ -534,21 +588,28 @@
             -webkit-line-clamp: 2;
         }
 
-        .week-grid.spotlight-active .week-cal-head,
-        .week-grid.spotlight-active .week-cal-allday {
-            grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
-            transition: grid-template-columns 0.55s ease;
-        }
-
-        .week-grid.spotlight-active .week-cal-day-head:not(.spotlight-focus),
-        .week-grid.spotlight-active .week-cal-allday-col:not(.spotlight-focus),
-        .week-grid.spotlight-active .week-cal-col:not(.spotlight-focus) {
-            display: none;
+        .week-spotlight-description {
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.05);
+            line-height: 1.45;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+            word-break: break-word;
         }
 
         .week-grid.spotlight-active .week-cal-columns {
             grid-template-columns: minmax(0, 1fr);
             transition: grid-template-columns 0.55s ease;
+        }
+
+        .week-cal-day-head.spotlight-focus,
+        .week-cal-allday-col.spotlight-focus,
+        .week-cal-col.spotlight-focus {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.45s ease;
         }
 
         .week-cal-day-head.spotlight-focus,
@@ -559,6 +620,7 @@
         .week-cal {
             flex: 1;
             min-height: 0;
+            height: 100%;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -987,7 +1049,9 @@
         let clockDateNode = null;
         let renderFrame = null;
         let spotlightTimer = null;
+        let spotlightAnimTimer = null;
         let lastSpotlightKey = '';
+        const SPOTLIGHT_FADE_MS = 550;
         const PRE_START_MS = 10 * 60 * 1000;
         const SPOTLIGHT_ON_MS = 20 * 1000;
         const SPOTLIGHT_CYCLE_MS = 60 * 1000;
@@ -1017,11 +1081,42 @@
         }
 
         function formatSpotlightCountdown(nowMs, startMs) {
-            const totalSec = Math.max(0, Math.ceil((startMs - nowMs) / 1000));
-            const min = Math.floor(totalSec / 60);
-            const sec = totalSec % 60;
-            if (min > 0) return `あと ${min}分${sec > 0 ? ` ${sec}秒` : ''}`;
-            return `あと ${sec}秒`;
+            const minutes = Math.max(0, Math.ceil((startMs - nowMs) / 60000));
+            if (minutes <= 0) return 'まもなく開始';
+            return `あと ${minutes}分`;
+        }
+
+        function buildSpotlightMetaHtml(event, start, end) {
+            const rows = [];
+            const startLabel = formatClockFromMs(start);
+            const endLabel = formatClockFromMs(end);
+
+            if (startLabel) rows.push({ label: '開始', value: startLabel });
+            if (endLabel) rows.push({ label: '終了', value: endLabel });
+
+            const durationMin = Math.max(0, Math.round((end - start) / 60000));
+            if (durationMin > 0) {
+                rows.push({ label: '所要', value: `${durationMin}分` });
+            }
+
+            const location = cleanText(event.location, '');
+            if (location) rows.push({ label: '場所', value: location });
+
+            const description = cleanText(event.description, '');
+            if (description) rows.push({ label: '詳細', value: description });
+
+            if (rows.length === 0) return '';
+
+            return `
+                <div class="week-spotlight-meta">
+                    ${rows.map(({ label, value }) => `
+                        <div class="week-spotlight-meta-row">
+                            <span class="week-spotlight-meta-label">${escapeHtml(label)}</span>
+                            <span class="week-spotlight-meta-value">${escapeHtml(value)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         function renderSpotlightPanel(target, spotlight, nowMs) {
@@ -1033,15 +1128,13 @@
             const { event, start, end } = spotlight;
             const color = colorToCss(event.color);
             const title = escapeHtml(cleanText(event.title, '無題'));
-            const location = cleanText(event.location, '');
             target.style.borderLeftColor = color;
             target.style.background = `linear-gradient(145deg, ${color}33, rgba(255, 255, 255, 0.05))`;
             target.innerHTML = `
                 <div class="week-spotlight-label">まもなく開始</div>
                 <div class="week-spotlight-countdown">${escapeHtml(formatSpotlightCountdown(nowMs, start))}</div>
-                <div class="week-spotlight-time">${escapeHtml(formatEventBlockTime(start, end))}</div>
                 <div class="week-spotlight-title">${title}</div>
-                ${location ? `<div class="week-spotlight-location">${escapeHtml(location)}</div>` : ''}
+                ${buildSpotlightMetaHtml(event, start, end)}
             `;
         }
 
@@ -1057,6 +1150,42 @@
                 const index = Number(node.dataset.weekDay);
                 node.classList.toggle('spotlight-focus', active && index === dayIndex);
             });
+        }
+
+        function setSpotlightVisible(grid, visible) {
+            if (!grid) return;
+            const isLayoutActive = grid.classList.contains('spotlight-active');
+
+            if (visible && !isLayoutActive) {
+                clearTimeout(spotlightAnimTimer);
+                grid.classList.add('spotlight-active');
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => grid.classList.add('spotlight-show'));
+                });
+                return;
+            }
+
+            if (visible && isLayoutActive) {
+                clearTimeout(spotlightAnimTimer);
+                grid.classList.add('spotlight-show');
+                return;
+            }
+
+            if (!visible && grid.classList.contains('spotlight-show')) {
+                grid.classList.remove('spotlight-show');
+                clearTimeout(spotlightAnimTimer);
+                spotlightAnimTimer = setTimeout(() => {
+                    grid.classList.remove('spotlight-active');
+                    applySpotlightDayFocus(grid, false, -1);
+                    const panel = el('weekSpotlight');
+                    if (panel) panel.innerHTML = '';
+                }, SPOTLIGHT_FADE_MS);
+                return;
+            }
+
+            if (!visible && !isLayoutActive) {
+                grid.classList.remove('spotlight-show', 'spotlight-active');
+            }
         }
 
         function updateCalendarSpotlight() {
@@ -1075,12 +1204,12 @@
                     ? `${spotlight.event.id}:${spotlight.start}:off`
                     : 'none';
 
-            grid.classList.toggle('spotlight-active', active);
-            applySpotlightDayFocus(grid, active, dayIndex);
+            setSpotlightVisible(grid, active);
+            if (active || grid.classList.contains('spotlight-active')) {
+                applySpotlightDayFocus(grid, active || grid.classList.contains('spotlight-show'), dayIndex);
+            }
             if (active && spotlight) {
                 renderSpotlightPanel(panel, spotlight, nowMs);
-            } else if (panel) {
-                panel.innerHTML = '';
             }
 
             if (nextKey !== lastSpotlightKey) {
