@@ -89,58 +89,9 @@
             min-height: 0;
         }
 
-        /* FHD(新レイアウト)では従来の縦積みスケジュールは非表示 */
-        .schedule-panel { display: none; }
-
-        /* --- Nest Hub / compact は従来の3カラム構成を維持 --- */
-        html[data-layout="nest-hub"] #app,
-        html[data-layout="compact"] #app {
-            grid-template-columns: 0.86fr 1fr 1.08fr;
-            grid-template-rows: 1fr 0.8fr auto;
-            grid-template-areas:
-                "left hourly schedule"
-                "left pressure schedule"
-                "left credits schedule";
-        }
-
-        html[data-layout="nest-hub"] .main-area,
-        html[data-layout="compact"] .main-area,
-        html[data-layout="nest-hub"] .top-row,
-        html[data-layout="compact"] .top-row {
-            display: contents;
-        }
-
-        html[data-layout="nest-hub"] .left,
-        html[data-layout="compact"] .left {
-            grid-area: left;
-            grid-template-rows: auto auto 1fr;
-        }
-
-        html[data-layout="nest-hub"] .hourly-panel,
-        html[data-layout="compact"] .hourly-panel {
-            grid-area: hourly;
-        }
-
-        html[data-layout="nest-hub"] .graph-panel,
-        html[data-layout="compact"] .graph-panel {
-            grid-area: pressure;
-        }
-
-        html[data-layout="nest-hub"] .credits,
-        html[data-layout="compact"] .credits {
-            grid-area: credits;
-        }
-
-        html[data-layout="nest-hub"] .week-panel,
-        html[data-layout="compact"] .week-panel {
-            display: none;
-        }
-
-        html[data-layout="nest-hub"] .schedule-panel,
-        html[data-layout="compact"] .schedule-panel {
-            display: flex;
-            grid-area: schedule;
-        }
+        /* リスト形式は使わない。常に週間カレンダーを表示 */
+        .schedule-panel { display: none !important; }
+        .week-panel { display: flex; }
 
         .panel {
             min-width: 0;
@@ -364,10 +315,6 @@
             align-content: end;
         }
 
-        html[data-layout="nest-hub"] .daily-week-grid,
-        html[data-layout="compact"] .daily-week-grid {
-            display: none;
-        }
 
         .daily-week-cell {
             min-width: 0;
@@ -930,29 +877,12 @@
         const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
 
         function detectLayout() {
-            const innerW = window.innerWidth;
-            const innerH = window.innerHeight;
-            const screenW = window.screen?.width || 0;
-            const screenH = window.screen?.height || 0;
-            // Cast 端末は inner が縮小報告されることがあるため、実解像度寄りの値も参照する
-            const w = Math.max(innerW, screenW, document.documentElement.clientWidth || 0);
-            const h = Math.max(innerH, screenH, document.documentElement.clientHeight || 0);
-            const ratio = w / h;
-
-            // Nest Hub (2nd gen) の 1280×800 のみリスト形式。Chromecast 等はすべて週間カレンダー。
-            const isNestHub =
-                w >= 1200 && w <= 1360 &&
-                h >= 780 && h <= 840 &&
-                ratio >= 1.52 && ratio <= 1.62;
-
-            const layout = isNestHub ? 'nest-hub' : 'fhd';
-            document.documentElement.dataset.layout = layout;
-            return layout;
+            // 解像度判定でリスト形式へ落ちないよう、常に週間カレンダー(FHD)レイアウトを使う
+            document.documentElement.dataset.layout = 'fhd';
+            return 'fhd';
         }
 
         function getMaxEvents() {
-            const layout = document.documentElement.dataset.layout || detectLayout();
-            if (layout === 'nest-hub') return 5;
             return 8;
         }
 
@@ -1239,12 +1169,6 @@
             const grid = el('dailyWeekGrid');
             if (!grid) return;
 
-            const layout = document.documentElement.dataset.layout || detectLayout();
-            if (layout === 'nest-hub') {
-                grid.innerHTML = '';
-                return;
-            }
-
             const daily = Array.isArray(uiState.weather?.dailyForecast) ? uiState.weather.dailyForecast : [];
             const weekStart = startOfWeekSunday(new Date());
             const today = new Date();
@@ -1401,11 +1325,6 @@
             const grid = el('weekGrid');
             const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
             if (!grid) return;
-
-            const layout = document.documentElement.dataset.layout || detectLayout();
-            if (layout === 'nest-hub') {
-                return;
-            }
 
             const weekStart = startOfWeekSunday(new Date());
             const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
