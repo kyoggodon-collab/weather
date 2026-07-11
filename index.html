@@ -411,87 +411,205 @@
         .week-grid {
             flex: 1;
             min-height: 0;
-            display: grid;
-            grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: calc(var(--u) * 0.38);
-        }
-
-        .week-day {
-            min-width: 0;
-            min-height: 0;
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.28);
-            border-radius: calc(var(--u) * 0.85);
-            background: rgba(255, 255, 255, 0.055);
-            padding: calc(var(--u) * 0.45);
             overflow: hidden;
         }
 
-        .week-day-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: calc(var(--u) * 0.2);
-            color: var(--muted);
-            font-size: calc(var(--u) * 0.95);
-            white-space: nowrap;
-        }
-
-        .week-day.sunday .week-day-header { color: #ff9a8f; }
-        .week-day.saturday .week-day-header { color: #8fc8ff; }
-
-        .week-date {
-            color: var(--text);
-            font-size: calc(var(--u) * 1.2);
-            font-weight: 500;
-        }
-
-        .week-event-list {
+        .week-cal {
             flex: 1;
             min-height: 0;
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.22);
             overflow: hidden;
         }
 
-        .week-event {
+        .week-cal-head,
+        .week-cal-allday {
+            display: grid;
+            grid-template-columns: calc(var(--u) * 4.2) repeat(7, minmax(0, 1fr));
+            gap: 0;
             min-width: 0;
-            border-left: calc(var(--u) * 0.22) solid var(--accent);
-            border-radius: calc(var(--u) * 0.45);
-            background: var(--panel-strong);
-            padding: calc(var(--u) * 0.22) calc(var(--u) * 0.35);
-            color: var(--text);
-            font-size: calc(var(--u) * 0.78);
-            line-height: 1.22;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        }
+
+        .week-cal-head {
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: calc(var(--u) * 0.25);
+        }
+
+        .week-cal-corner {
+            min-width: 0;
+        }
+
+        .week-cal-day-head {
+            min-width: 0;
+            text-align: center;
+            padding: calc(var(--u) * 0.15) calc(var(--u) * 0.2);
+            color: var(--muted);
+            font-size: calc(var(--u) * 0.82);
             white-space: nowrap;
         }
 
-        .week-event-time {
-            color: var(--warn);
-            margin-right: 0.25em;
+        .week-cal-day-head.sunday { color: #ff9a8f; }
+        .week-cal-day-head.saturday { color: #8fc8ff; }
+        .week-cal-day-head.today {
+            color: var(--text);
+            font-weight: 500;
         }
 
-        .week-more {
+        .week-cal-day-head .week-date {
+            display: block;
+            font-size: calc(var(--u) * 1.05);
+            color: var(--text);
+            line-height: 1.15;
+        }
+
+        .week-cal-day-head.today .week-date {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: calc(var(--u) * 1.8);
+            min-height: calc(var(--u) * 1.8);
+            border-radius: 999px;
+            background: rgba(98, 200, 255, 0.22);
+        }
+
+        .week-cal-allday {
+            flex-shrink: 0;
+            min-height: calc(var(--u) * 1.6);
+            max-height: calc(var(--u) * 7.5);
+            border-bottom: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .week-cal-allday-label {
+            min-width: 0;
+        }
+
+        .week-cal-allday-col {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.12);
+            padding: calc(var(--u) * 0.12) calc(var(--u) * 0.1);
+            overflow: hidden;
+        }
+
+        .week-cal-allday-event {
+            min-width: 0;
+            border-radius: calc(var(--u) * 0.35);
+            padding: calc(var(--u) * 0.14) calc(var(--u) * 0.28);
+            font-size: calc(var(--u) * 0.68);
+            line-height: 1.2;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.12);
+            border-left: calc(var(--u) * 0.18) solid var(--accent);
+        }
+
+        .week-cal-body {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
+            overflow: hidden;
+        }
+
+        .week-cal-times {
+            position: relative;
+            min-width: 0;
+            height: 100%;
+        }
+
+        .week-cal-time {
+            position: absolute;
+            left: 0;
+            right: calc(var(--u) * 0.15);
+            transform: translateY(-50%);
+            text-align: right;
             color: var(--dim);
-            font-size: calc(var(--u) * 0.72);
-            padding-left: calc(var(--u) * 0.45);
+            font-size: calc(var(--u) * 0.62);
+            line-height: 1;
         }
 
+        .week-cal-columns {
+            position: relative;
+            min-width: 0;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            border-left: 1px solid var(--border);
+        }
+
+        .week-cal-col {
+            position: relative;
+            min-width: 0;
+            height: 100%;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .week-cal-col-lines {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.06) 0,
+                rgba(255, 255, 255, 0.06) 1px,
+                transparent 1px,
+                transparent calc(100% / 13)
+            );
+        }
+
+        .week-cal-col.today {
+            background: rgba(98, 200, 255, 0.04);
+        }
+
+        .week-cal-event {
+            position: absolute;
+            box-sizing: border-box;
+            border-radius: calc(var(--u) * 0.32);
+            padding: calc(var(--u) * 0.12) calc(var(--u) * 0.22);
+            overflow: hidden;
+            color: #fff;
+            font-size: calc(var(--u) * 0.62);
+            line-height: 1.18;
+            border-left: calc(var(--u) * 0.16) solid var(--accent);
+            background: rgba(98, 200, 255, 0.28);
+            z-index: 1;
+        }
+
+        .week-cal-event-time {
+            font-size: calc(var(--u) * 0.56);
+            opacity: 0.92;
+            margin-bottom: calc(var(--u) * 0.05);
+            white-space: nowrap;
+        }
+
+        .week-cal-event-title {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            word-break: break-word;
+        }
+
+        .week-cal-event.short .week-cal-event-time {
+            display: none;
+        }
+
+        .week-cal-event.short .week-cal-event-title {
+            -webkit-line-clamp: 2;
+            font-size: calc(var(--u) * 0.58);
+        }
+
+        /* Nest Hub では week-panel 自体を非表示のため以下は未使用 */
         html[data-layout="nest-hub"] .week-grid {
             gap: calc(var(--u) * 0.26);
-        }
-
-        html[data-layout="nest-hub"] .week-day {
-            padding: calc(var(--u) * 0.34);
-        }
-
-        html[data-layout="nest-hub"] .week-event {
-            font-size: calc(var(--u) * 0.68);
-            padding: calc(var(--u) * 0.16) calc(var(--u) * 0.26);
         }
 
         .daily-list {
@@ -891,26 +1009,34 @@
             const hourly = Array.isArray(weather?.hourlyForecast) ? weather.hourlyForecast : [];
             if (hourly.length <= 6) return hourly;
 
-            const currentHour = Number(uiState.currentHour);
-            const start = Number.isFinite(currentHour)
-                ? Math.max(0, Math.min(hourly.length - 6, currentHour))
-                : 0;
+            const currentHour = new Date().getHours();
+            const start = Math.max(0, Math.min(hourly.length - 6, currentHour));
             return hourly.slice(start, start + 6);
         }
 
         function renderClock() {
             const now = new Date();
-            setText('time', uiState.currentTime || `${fmt2(now.getHours())}:${fmt2(now.getMinutes())}`);
-            setText('seconds', uiState.currentSeconds || fmt2(now.getSeconds()));
+            // Cast メッセージに依存せず、Receiver 内蔵時計で常に滑らかに更新
+            setText('time', `${fmt2(now.getHours())}:${fmt2(now.getMinutes())}`);
+            setText('seconds', fmt2(now.getSeconds()));
             setText(
                 'date',
-                uiState.currentDate || now.toLocaleDateString('ja-JP', {
+                now.toLocaleDateString('ja-JP', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
-                    weekday: 'short'
-                })
+                    weekday: 'short',
+                }),
             );
+        }
+
+        function startLocalClock() {
+            renderClock();
+            const msToNextSecond = 1000 - (Date.now() % 1000);
+            setTimeout(() => {
+                renderClock();
+                setInterval(renderClock, 1000);
+            }, msToNextSecond);
         }
 
         function renderWeather() {
@@ -990,10 +1116,72 @@
             }).join('');
         }
 
+        const CAL_START_HOUR = 9;
+        const CAL_END_HOUR = 22;
+        const CAL_HOUR_COUNT = CAL_END_HOUR - CAL_START_HOUR;
+
+        function eventOverlapsDay(event, dayStartMs, dayEndMs) {
+            return Number(event.end) > dayStartMs && Number(event.start) < dayEndMs;
+        }
+
+        function formatClockFromMs(ms) {
+            const date = new Date(ms);
+            if (Number.isNaN(date.getTime())) return '';
+            return `${fmt2(date.getHours())}:${fmt2(date.getMinutes())}`;
+        }
+
+        function formatEventBlockTime(startMs, endMs) {
+            return `${formatClockFromMs(startMs)} - ${formatClockFromMs(endMs)}`;
+        }
+
+        function clipEventToDayRange(event, dayStartMs) {
+            const rangeStart = dayStartMs + CAL_START_HOUR * 3600000;
+            const rangeEnd = dayStartMs + CAL_END_HOUR * 3600000;
+            const clipStart = Math.max(Number(event.start), rangeStart);
+            const clipEnd = Math.min(Number(event.end), rangeEnd);
+            if (clipEnd <= clipStart) return null;
+            return { event, clipStart, clipEnd };
+        }
+
+        function assignEventColumns(blocks) {
+            if (!blocks.length) return [];
+            const sorted = [...blocks].sort((a, b) => a.clipStart - b.clipStart || a.clipEnd - b.clipEnd);
+            const placed = sorted.map((block) => ({ ...block, col: 0, colCount: 1 }));
+
+            let index = 0;
+            while (index < placed.length) {
+                let groupEnd = placed[index].clipEnd;
+                let next = index + 1;
+                while (next < placed.length && placed[next].clipStart < groupEnd) {
+                    groupEnd = Math.max(groupEnd, placed[next].clipEnd);
+                    next += 1;
+                }
+
+                const group = placed.slice(index, next);
+                const colEnds = [];
+                group.forEach((block) => {
+                    let col = 0;
+                    while (colEnds[col] && colEnds[col] > block.clipStart) col += 1;
+                    colEnds[col] = block.clipEnd;
+                    block.col = col;
+                });
+                const colCount = Math.max(1, colEnds.length);
+                group.forEach((block) => { block.colCount = colCount; });
+                index = next;
+            }
+
+            return placed;
+        }
+
         function renderWeekCalendar() {
             const grid = el('weekGrid');
             const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
             if (!grid) return;
+
+            const layout = document.documentElement.dataset.layout || detectLayout();
+            if (layout === 'nest-hub' || layout === 'compact') {
+                return;
+            }
 
             const weekStart = startOfWeekSunday(new Date());
             const weekEnd = new Date(weekStart);
@@ -1001,42 +1189,105 @@
             setText('weekRange', `${weekStart.getMonth() + 1}/${weekStart.getDate()} - ${weekEnd.getMonth() + 1}/${weekEnd.getDate()}`);
 
             const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-            const maxEventsPerDay = document.documentElement.dataset.layout === 'nest-hub' ? 3 : 4;
-
-            grid.innerHTML = Array.from({ length: 7 }, (_, index) => {
+            const today = new Date();
+            const days = Array.from({ length: 7 }, (_, index) => {
                 const day = new Date(weekStart);
                 day.setDate(weekStart.getDate() + index);
-                const dayStart = day.getTime();
-                const dayEnd = dayStart + 24 * 60 * 60 * 1000;
-                const dayEvents = events
-                    .filter((event) => Number(event.end) > dayStart && Number(event.start) < dayEnd)
-                    .sort((a, b) => Number(a.start) - Number(b.start));
-                const visible = dayEvents.slice(0, maxEventsPerDay);
-                const hiddenCount = Math.max(0, dayEvents.length - visible.length);
+                return day;
+            });
+
+            const headHtml = days.map((day, index) => {
                 const classes = [
-                    'week-day',
+                    'week-cal-day-head',
                     index === 0 ? 'sunday' : '',
                     index === 6 ? 'saturday' : '',
-                    sameDay(day, new Date()) ? 'today' : ''
+                    sameDay(day, today) ? 'today' : '',
                 ].filter(Boolean).join(' ');
-
                 return `
-                    <section class="${classes}">
-                        <div class="week-day-header">
-                            <span>${dayNames[index]}</span>
-                            <span class="week-date">${day.getDate()}</span>
-                        </div>
-                        <div class="week-event-list">
-                            ${visible.map((event) => `
-                                <div class="week-event" style="border-left-color:${colorToCss(event.color)}">
-                                    <span class="week-event-time">${escapeHtml(formatEventTimeShort(event))}</span>${escapeHtml(cleanText(event.title, '無題'))}
-                                </div>
-                            `).join('')}
-                            ${hiddenCount > 0 ? `<div class="week-more">+${hiddenCount}件</div>` : ''}
-                        </div>
-                    </section>
+                    <div class="${classes}">
+                        ${dayNames[index]}
+                        <span class="week-date">${day.getDate()}</span>
+                    </div>
                 `;
             }).join('');
+
+            const alldayHtml = days.map((day) => {
+                const dayStart = startOfDay(day).getTime();
+                const dayEnd = dayStart + 86400000;
+                const alldayEvents = events
+                    .filter((event) => event.allDay && eventOverlapsDay(event, dayStart, dayEnd))
+                    .sort((a, b) => Number(a.start) - Number(b.start) || cleanText(a.title).localeCompare(cleanText(b.title), 'ja'));
+
+                return `
+                    <div class="week-cal-allday-col">
+                        ${alldayEvents.map((event) => `
+                            <div class="week-cal-allday-event" style="border-left-color:${colorToCss(event.color)};background:${colorToCss(event.color)}33">
+                                ${escapeHtml(cleanText(event.title, '無題'))}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+
+            const timeLabels = Array.from({ length: CAL_HOUR_COUNT + 1 }, (_, index) => {
+                const hour = CAL_START_HOUR + index;
+                const top = (index / CAL_HOUR_COUNT) * 100;
+                return `<div class="week-cal-time" style="top:${top}%">${hour}:00</div>`;
+            }).join('');
+
+            const columnsHtml = days.map((day, index) => {
+                const dayStart = startOfDay(day).getTime();
+                const dayEnd = dayStart + 86400000;
+                const timedBlocks = events
+                    .filter((event) => !event.allDay && eventOverlapsDay(event, dayStart, dayEnd))
+                    .map((event) => clipEventToDayRange(event, dayStart))
+                    .filter(Boolean);
+                const laidOut = assignEventColumns(timedBlocks);
+                const totalMs = CAL_HOUR_COUNT * 3600000;
+
+                const eventsHtml = laidOut.map(({ event, clipStart, clipEnd, col, colCount }) => {
+                    const top = ((clipStart - dayStart - CAL_START_HOUR * 3600000) / totalMs) * 100;
+                    const height = Math.max(((clipEnd - clipStart) / totalMs) * 100, 100 / CAL_HOUR_COUNT * 0.45);
+                    const width = 100 / colCount;
+                    const left = width * col;
+                    const isShort = (clipEnd - clipStart) < 45 * 60000;
+                    const color = colorToCss(event.color);
+                    return `
+                        <article
+                            class="week-cal-event${isShort ? ' short' : ''}"
+                            style="top:${top}%;height:${height}%;left:calc(${left}% + 1px);width:calc(${width}% - 2px);border-left-color:${color};background:${color}44"
+                        >
+                            <div class="week-cal-event-time">${escapeHtml(formatEventBlockTime(clipStart, clipEnd))}</div>
+                            <div class="week-cal-event-title">${escapeHtml(cleanText(event.title, '無題'))}</div>
+                        </article>
+                    `;
+                }).join('');
+
+                const classes = ['week-cal-col', sameDay(day, today) ? 'today' : ''].filter(Boolean).join(' ');
+                return `
+                    <div class="${classes}">
+                        <div class="week-cal-col-lines"></div>
+                        ${eventsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            grid.innerHTML = `
+                <div class="week-cal">
+                    <div class="week-cal-head">
+                        <div class="week-cal-corner"></div>
+                        ${headHtml}
+                    </div>
+                    <div class="week-cal-allday">
+                        <div class="week-cal-allday-label"></div>
+                        ${alldayHtml}
+                    </div>
+                    <div class="week-cal-body">
+                        <div class="week-cal-times">${timeLabels}</div>
+                        <div class="week-cal-columns">${columnsHtml}</div>
+                    </div>
+                </div>
+            `;
         }
 
         function drawRadar() {
@@ -1286,7 +1537,7 @@
         }
 
         window.addEventListener('resize', onViewportChange);
-        setInterval(renderClock, 1000);
+        startLocalClock();
         detectLayout();
         startCastReceiver();
         render();
