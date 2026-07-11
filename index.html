@@ -453,7 +453,6 @@
             grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
             gap: 0;
             overflow: hidden;
-            transition: grid-template-columns 0.52s ease-out, gap 0.52s ease-out;
         }
 
         .week-grid.spotlight-active .week-grid-layout {
@@ -468,6 +467,64 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+        }
+
+        .week-cal-track {
+            flex: 1;
+            min-height: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            min-width: 100%;
+        }
+
+        .week-grid.spotlight-active .week-cal-head,
+        .week-grid.spotlight-active .week-cal-allday {
+            grid-template-columns: var(--time-gutter-w, calc(var(--u) * 4.2)) repeat(7, var(--day-col-w, 1fr));
+        }
+
+        .week-grid.spotlight-active .week-cal-columns {
+            grid-template-columns: repeat(7, var(--day-col-w, 1fr));
+        }
+
+        .week-grid.spotlight-active .week-cal-track {
+            min-width: calc(var(--day-col-w, 0px) * 7 + var(--time-gutter-w, 0px));
+        }
+
+        .week-cal-day-head,
+        .week-cal-allday-col,
+        .week-cal-col {
+            transition: transform 0.52s ease-out, opacity 0.42s ease-out;
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-day-head[data-slide-out="left"],
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-allday-col[data-slide-out="left"],
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-col[data-slide-out="left"] {
+            transform: translateX(-115%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-day-head[data-slide-out="right"],
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-allday-col[data-slide-out="right"],
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-col[data-slide-out="right"] {
+            transform: translateX(115%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-day-head.spotlight-focus,
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-allday-col.spotlight-focus,
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-col.spotlight-focus {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .week-grid.spotlight-leaving .week-cal-day-head,
+        .week-grid.spotlight-leaving .week-cal-allday-col,
+        .week-grid.spotlight-leaving .week-cal-col {
+            transform: translateX(0);
+            opacity: 1;
         }
 
         .week-spotlight {
@@ -502,21 +559,6 @@
             opacity: 0;
             transform: translateX(105%);
             pointer-events: none;
-        }
-
-        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-head,
-        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-allday {
-            grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
-        }
-
-        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-columns {
-            grid-template-columns: minmax(0, 1fr);
-        }
-
-        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-day-head:not(.spotlight-focus),
-        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-allday-col:not(.spotlight-focus),
-        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-col:not(.spotlight-focus) {
-            display: none;
         }
 
         .week-spotlight-label {
@@ -1137,11 +1179,43 @@
             return Math.round((dayStart - weekStart) / 86400000);
         }
 
+        function prepareSpotlightColumnMetrics(grid) {
+            const wrap = grid.querySelector('.week-cal-wrap');
+            const day0 = grid.querySelector('.week-cal-day-head[data-week-day="0"]');
+            const day1 = grid.querySelector('.week-cal-day-head[data-week-day="1"]');
+            const times = grid.querySelector('.week-cal-times');
+            if (!wrap || !day0 || !day1) return;
+
+            const dayColW = Math.max(1, day1.offsetLeft - day0.offsetLeft);
+            const gutterW = times ? times.offsetWidth : day0.offsetLeft;
+            wrap.style.setProperty('--day-col-w', `${dayColW}px`);
+            wrap.style.setProperty('--time-gutter-w', `${gutterW}px`);
+        }
+
+        function clearSpotlightColumnMetrics(grid) {
+            const wrap = grid.querySelector('.week-cal-wrap');
+            if (wrap) {
+                wrap.style.removeProperty('--day-col-w');
+                wrap.style.removeProperty('--time-gutter-w');
+            }
+        }
+
         function applySpotlightDayFocus(grid, active, dayIndex) {
             if (!grid) return;
+            const slideMode = active
+                && grid.classList.contains('spotlight-show')
+                && !grid.classList.contains('spotlight-leaving');
+
             grid.querySelectorAll('[data-week-day]').forEach((node) => {
                 const index = Number(node.dataset.weekDay);
-                node.classList.toggle('spotlight-focus', active && index === dayIndex);
+                const isFocus = active && index === dayIndex;
+                node.classList.toggle('spotlight-focus', isFocus);
+
+                if (slideMode && !isFocus) {
+                    node.dataset.slideOut = index < dayIndex ? 'left' : 'right';
+                } else {
+                    node.removeAttribute('data-slide-out');
+                }
             });
         }
 
@@ -1156,9 +1230,13 @@
                 grid.classList.remove('spotlight-leaving');
 
                 if (!isLayoutActive) {
+                    prepareSpotlightColumnMetrics(grid);
                     grid.classList.add('spotlight-active');
                     requestAnimationFrame(() => {
-                        requestAnimationFrame(() => grid.classList.add('spotlight-show'));
+                        requestAnimationFrame(() => {
+                            grid.classList.add('spotlight-show');
+                            updateCalendarSpotlight();
+                        });
                     });
                     return;
                 }
@@ -1172,11 +1250,12 @@
             if (!visible && (isShowing || isLayoutActive)) {
                 clearTimeout(spotlightAnimTimer);
                 grid.classList.add('spotlight-leaving');
-                grid.classList.remove('spotlight-show');
                 applySpotlightDayFocus(grid, false, -1);
+                grid.classList.remove('spotlight-show');
 
                 spotlightAnimTimer = setTimeout(() => {
                     grid.classList.remove('spotlight-active', 'spotlight-leaving');
+                    clearSpotlightColumnMetrics(grid);
                     const panel = el('weekSpotlight');
                     if (panel) panel.innerHTML = '';
                 }, SPOTLIGHT_ANIM_MS);
@@ -1185,6 +1264,7 @@
 
             if (!visible) {
                 grid.classList.remove('spotlight-show', 'spotlight-active', 'spotlight-leaving');
+                clearSpotlightColumnMetrics(grid);
             }
         }
 
@@ -1794,18 +1874,20 @@
             grid.innerHTML = `
                 <div class="week-grid-layout">
                     <div class="week-cal-wrap">
-                        <div class="week-cal">
-                            <div class="week-cal-head">
-                                <div class="week-cal-corner"></div>
-                                ${headHtml}
-                            </div>
-                            <div class="week-cal-allday">
-                                <div class="week-cal-allday-label"></div>
-                                ${alldayHtml}
-                            </div>
-                            <div class="week-cal-body">
-                                <div class="week-cal-times">${timeLabels}</div>
-                                <div class="week-cal-columns">${columnsHtml}</div>
+                        <div class="week-cal-track">
+                            <div class="week-cal">
+                                <div class="week-cal-head">
+                                    <div class="week-cal-corner"></div>
+                                    ${headHtml}
+                                </div>
+                                <div class="week-cal-allday">
+                                    <div class="week-cal-allday-label"></div>
+                                    ${alldayHtml}
+                                </div>
+                                <div class="week-cal-body">
+                                    <div class="week-cal-times">${timeLabels}</div>
+                                    <div class="week-cal-columns">${columnsHtml}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
