@@ -40,6 +40,22 @@
             --u: calc(min(100vw / 128, 100vh / 72) * 1.15);
         }
 
+        html.cast-receiver .panel {
+            contain: layout style paint;
+        }
+
+        html.cast-receiver .week-cal {
+            backface-visibility: hidden;
+        }
+
+        html.cast-receiver .week-spotlight {
+            backface-visibility: hidden;
+        }
+
+        html.cast-receiver .week-cal-wrap.spotlight-window {
+            overflow: hidden;
+        }
+
         * { box-sizing: border-box; }
 
         html,
@@ -1035,6 +1051,46 @@
         let uiState = { calendarEvents: [] };
         let radarDrawToken = 0;
         const radarImageCache = new Map();
+        let lastRadarDrawKey = '';
+        let IS_CAST_RECEIVER = false;
+        const CAST = {
+            clockFallbackMs: 1000,
+            spotlightIdleMs: 10000,
+            spotlightWatchMs: 15000,
+            spotlightActiveMs: 15000,
+            resizeDebounceMs: 800,
+            canvasDpr: 1,
+            radarCacheMax: 32,
+        };
+        let cachedSpotlightMetrics = null;
+        let cachedSpotlightDayIndex = -1;
+        let lastSpotlightLayoutKey = '';
+        let lastSpotlightMinuteKey = '';
+        let resizeTimer = null;
+
+        function applyCastRuntimeProfile() {
+            IS_CAST_RECEIVER = !!(window.cast && cast.framework);
+            if (!IS_CAST_RECEIVER) {
+                CAST.clockFallbackMs = 250;
+                CAST.spotlightIdleMs = 5000;
+                CAST.spotlightWatchMs = 3000;
+                CAST.spotlightActiveMs = 1000;
+                CAST.resizeDebounceMs = 200;
+                CAST.canvasDpr = Math.min(window.devicePixelRatio || 1, 2);
+                CAST.radarCacheMax = 80;
+                return;
+            }
+            document.documentElement.classList.add('cast-receiver');
+            CAST.canvasDpr = 1;
+        }
+
+        function trimRadarCache() {
+            while (radarImageCache.size > CAST.radarCacheMax) {
+                const oldest = radarImageCache.keys().next().value;
+                if (oldest === undefined) break;
+                radarImageCache.delete(oldest);
+            }
+        }
 
         const el = (id) => document.getElementById(id);
         const fmt2 = (n) => String(n).padStart(2, '0');
@@ -1201,6 +1257,9 @@
 
         function clearSpotlightMetrics(grid) {
             const wrap = grid.querySelector('.week-cal-wrap');
+            cachedSpotlightMetrics = null;
+            cachedSpotlightDayIndex = -1;
+            lastSpotlightLayoutKey = '';
             delete grid.dataset.spotGutterW;
             delete grid.dataset.spotDayColW;
             delete grid.dataset.spotVisibleW;
@@ -1209,6 +1268,9 @@
                 wrap.style.removeProperty('--spot-gutter-w');
                 wrap.style.removeProperty('--spot-day-col-w');
                 wrap.style.removeProperty('--spot-cal-w');
+                wrap.style.removeProperty('max-width');
+                wrap.style.removeProperty('clip-path');
+                wrap.classList.remove('spotlight-window');
             }
             grid.style.removeProperty('--spot-panel-left');
         }
@@ -1226,18 +1288,22 @@
 
             if (!showing || dayIndex < 0) {
                 wrap.style.removeProperty('clip-path');
+                wrap.style.removeProperty('max-width');
+                wrap.classList.remove('spotlight-window');
                 cal.style.transform = '';
-                if (shade) {
-                    shade.style.left = '';
-                }
-                if (panel) {
-                    panel.style.left = '';
-                }
+                if (shade) shade.style.left = '';
+                if (panel) panel.style.left = '';
                 grid.style.removeProperty('--spot-panel-left');
                 return;
             }
 
-            const metrics = measureSpotlightWindow(grid);
+            const layoutKey = `${dayIndex}:${grid.dataset.spotCalW || ''}`;
+            if (!cachedSpotlightMetrics || cachedSpotlightDayIndex !== dayIndex || lastSpotlightLayoutKey !== layoutKey) {
+                cachedSpotlightMetrics = measureSpotlightWindow(grid);
+                cachedSpotlightDayIndex = dayIndex;
+                lastSpotlightLayoutKey = layoutKey;
+            }
+            const metrics = cachedSpotlightMetrics;
             if (!metrics) return;
 
             grid.dataset.spotGutterW = String(metrics.gutterW);
@@ -1245,17 +1311,18 @@
             grid.dataset.spotVisibleW = String(metrics.visibleW);
 
             const dayColW = metrics.dayColW;
-            cal.style.transform = `translateX(${-dayIndex * dayColW}px)`;
+            cal.style.transform = `translate3d(${-dayIndex * dayColW}px,0,0)`;
 
-            const wrapRect = wrap.getBoundingClientRect();
-            const clipRight = Math.max(0, Math.round(wrapRect.width - metrics.visibleW));
-            wrap.style.clipPath = `inset(0 ${clipRight}px 0 0)`;
+            wrap.classList.add('spotlight-window');
+            wrap.style.clipPath = '';
+            wrap.style.maxWidth = `${metrics.visibleW}px`;
 
             if (shade) {
                 shade.style.left = `${metrics.visibleW}px`;
             }
 
             const gridRect = grid.getBoundingClientRect();
+            const wrapRect = wrap.getBoundingClientRect();
             const panelLeft = Math.round(wrapRect.left - gridRect.left + metrics.visibleW);
             grid.style.setProperty('--spot-panel-left', `${panelLeft}px`);
             if (panel) {
@@ -1289,15 +1356,14 @@
                     captureSpotlightMetrics(grid);
                     grid.classList.add('spotlight-active');
                     requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            grid.classList.add('spotlight-show');
-                            updateCalendarSpotlight();
-                        });
+                        grid.classList.add('spotlight-show');
+                        updateCalendarSpotlight();
                     });
                     return;
                 }
 
                 grid.classList.add('spotlight-show');
+                updateCalendarSpotlight();
                 return;
             }
 
@@ -1329,9 +1395,9 @@
         function getSpotlightPollDelay(nowMs) {
             const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
             const spotlight = findSpotlightEvent(events, nowMs);
-            if (!spotlight) return 5000;
-            if (isSpotlightPhase(nowMs, spotlight.start)) return 1000;
-            return 3000;
+            if (!spotlight) return CAST.spotlightIdleMs;
+            if (isSpotlightPhase(nowMs, spotlight.start)) return CAST.spotlightActiveMs;
+            return CAST.spotlightWatchMs;
         }
 
         function updateCalendarSpotlight() {
@@ -1351,21 +1417,24 @@
                     : 'none';
 
             setSpotlightVisible(grid, active);
-            syncSpotlightCalendarView(grid, dayIndex, active);
-            if (active) {
-                applySpotlightDayFocus(grid, true, dayIndex);
-            } else if (!grid.classList.contains('spotlight-leaving')) {
-                applySpotlightDayFocus(grid, false, -1);
-            }
-            if (active && spotlight) {
-                const nextPanel = buildSpotlightPanelHtml(spotlight, nowMs);
-                if (panel && panel.innerHTML !== nextPanel) {
-                    renderSpotlightPanel(panel, spotlight, nowMs, nextPanel);
-                }
-            }
 
             if (nextKey !== lastSpotlightKey) {
+                syncSpotlightCalendarView(grid, dayIndex, active);
+                if (active) {
+                    applySpotlightDayFocus(grid, true, dayIndex);
+                } else if (!grid.classList.contains('spotlight-leaving')) {
+                    applySpotlightDayFocus(grid, false, -1);
+                }
                 lastSpotlightKey = nextKey;
+                lastSpotlightMinuteKey = '';
+            }
+
+            if (active && spotlight) {
+                const minuteKey = `${spotlight.event.id}:${Math.max(0, Math.ceil((spotlight.start - nowMs) / 60000))}`;
+                if (minuteKey !== lastSpotlightMinuteKey) {
+                    lastSpotlightMinuteKey = minuteKey;
+                    renderSpotlightPanel(panel, spotlight, nowMs, buildSpotlightPanelHtml(spotlight, nowMs));
+                }
             }
         }
 
@@ -1441,6 +1510,7 @@
                 img.crossOrigin = 'anonymous';
                 img.onload = () => {
                     radarImageCache.set(url, img);
+                    trimRadarCache();
                     resolve(img);
                 };
                 img.onerror = () => {
@@ -1627,8 +1697,10 @@
             renderClock();
 
             const poll = () => {
-                renderClock();
-                clockPollTimer = setTimeout(poll, 125);
+                if (Date.now() - lastPhoneClockAt >= PHONE_CLOCK_STALE_MS) {
+                    renderClock();
+                }
+                clockPollTimer = setTimeout(poll, CAST.clockFallbackMs);
             };
             poll();
         }
@@ -1980,6 +2052,9 @@
             const lon = Number(uiState.manualLon);
             const meta = uiState.weather?.nowcastMeta;
             const zoom = 10;
+            const drawKey = `${lat},${lon},${meta?.basetime || ''},${meta?.validtime || ''},${width}x${height}`;
+            if (drawKey === lastRadarDrawKey) return Promise.resolve();
+            lastRadarDrawKey = drawKey;
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
                 ctx.fillStyle = '#687080';
@@ -2074,7 +2149,7 @@
             const wrap = canvas?.parentElement;
             if (!canvas || !wrap) return;
 
-            const ratio = window.devicePixelRatio || 1;
+            const ratio = CAST.canvasDpr;
             const width = Math.max(1, wrap.clientWidth);
             const height = Math.max(1, wrap.clientHeight);
             canvas.width = Math.floor(width * ratio);
@@ -2158,6 +2233,18 @@
             });
         }
 
+        function scheduleHeavyDraw() {
+            const run = () => {
+                drawRadar();
+                drawPressure();
+            };
+            if (IS_CAST_RECEIVER && typeof requestIdleCallback === 'function') {
+                requestIdleCallback(run, { timeout: 2500 });
+                return;
+            }
+            setTimeout(run, 0);
+        }
+
         function scheduleRender() {
             if (renderFrame !== null) return;
             renderFrame = requestAnimationFrame(() => {
@@ -2172,10 +2259,7 @@
             renderDailyWeek();
             renderWeekCalendar();
             renderEvents();
-            setTimeout(() => {
-                drawRadar();
-                drawPressure();
-            }, 0);
+            scheduleHeavyDraw();
         }
 
         window.__setWeatherInfoState = (nextState) => {
@@ -2184,6 +2268,8 @@
         };
 
         function startCastReceiver() {
+            applyCastRuntimeProfile();
+
             if (!window.cast || !cast.framework) {
                 console.warn('Cast framework is not available. Running in browser preview mode.');
                 return;
@@ -2207,21 +2293,33 @@
 
         function refreshLayoutViews() {
             detectLayout();
+            cachedSpotlightMetrics = null;
+            lastSpotlightLayoutKey = '';
+            lastRadarDrawKey = '';
             drawRadar();
             drawPressure();
-            renderDailyWeek();
-            renderWeekCalendar();
-            renderEvents();
+            if (!IS_CAST_RECEIVER) {
+                renderDailyWeek();
+                renderWeekCalendar();
+                renderEvents();
+                return;
+            }
+            updateCalendarSpotlight();
         }
 
-        window.addEventListener('resize', refreshLayoutViews);
+        function scheduleLayoutRefresh() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(refreshLayoutViews, CAST.resizeDebounceMs);
+        }
+
+        window.addEventListener('resize', scheduleLayoutRefresh);
+        applyCastRuntimeProfile();
         startLocalClock();
         startSpotlightLoop();
         detectLayout();
         startCastReceiver();
         render();
-        setTimeout(refreshLayoutViews, 400);
-        setTimeout(refreshLayoutViews, 1500);
+        scheduleLayoutRefresh();
     </script>
 </body>
 </html>
