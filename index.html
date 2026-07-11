@@ -930,23 +930,22 @@
         const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
 
         function detectLayout() {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
+            const innerW = window.innerWidth;
+            const innerH = window.innerHeight;
+            const screenW = window.screen?.width || 0;
+            const screenH = window.screen?.height || 0;
+            // Cast 端末は inner が縮小報告されることがあるため、実解像度寄りの値も参照する
+            const w = Math.max(innerW, screenW, document.documentElement.clientWidth || 0);
+            const h = Math.max(innerH, screenH, document.documentElement.clientHeight || 0);
             const ratio = w / h;
 
-            // Nest Hub (2nd gen) は 1280×800 固定。それ以外の 720p/1080p Chromecast は FHD レイアウト。
+            // Nest Hub (2nd gen) の 1280×800 のみリスト形式。Chromecast 等はすべて週間カレンダー。
             const isNestHub =
                 w >= 1200 && w <= 1360 &&
                 h >= 780 && h <= 840 &&
                 ratio >= 1.52 && ratio <= 1.62;
 
-            let layout = 'fhd';
-            if (isNestHub) {
-                layout = 'nest-hub';
-            } else if (w < 1100 || h < 650) {
-                layout = 'compact';
-            }
-
+            const layout = isNestHub ? 'nest-hub' : 'fhd';
             document.documentElement.dataset.layout = layout;
             return layout;
         }
@@ -954,7 +953,6 @@
         function getMaxEvents() {
             const layout = document.documentElement.dataset.layout || detectLayout();
             if (layout === 'nest-hub') return 5;
-            if (layout === 'compact') return 6;
             return 8;
         }
 
@@ -1242,7 +1240,7 @@
             if (!grid) return;
 
             const layout = document.documentElement.dataset.layout || detectLayout();
-            if (layout === 'nest-hub' || layout === 'compact') {
+            if (layout === 'nest-hub') {
                 grid.innerHTML = '';
                 return;
             }
@@ -1405,7 +1403,7 @@
             if (!grid) return;
 
             const layout = document.documentElement.dataset.layout || detectLayout();
-            if (layout === 'nest-hub' || layout === 'compact') {
+            if (layout === 'nest-hub') {
                 return;
             }
 
@@ -1758,7 +1756,7 @@
             context.start(options);
         }
 
-        function onViewportChange() {
+        function refreshLayoutViews() {
             detectLayout();
             drawRadar();
             drawPressure();
@@ -1767,11 +1765,13 @@
             renderEvents();
         }
 
-        window.addEventListener('resize', onViewportChange);
+        window.addEventListener('resize', refreshLayoutViews);
         startLocalClock();
         detectLayout();
         startCastReceiver();
         render();
+        setTimeout(refreshLayoutViews, 400);
+        setTimeout(refreshLayoutViews, 1500);
     </script>
 </body>
 </html>
