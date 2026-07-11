@@ -1577,7 +1577,7 @@
                 `;
             }).join('');
 
-            const alldayHtml = days.map((day) => {
+            const alldayHtml = days.map((day, index) => {
                 const dayStart = startOfDay(day).getTime();
                 const dayEnd = dayStart + 86400000;
                 const alldayEvents = events
