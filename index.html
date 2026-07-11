@@ -721,12 +721,17 @@
             const w = window.innerWidth;
             const h = window.innerHeight;
             const ratio = w / h;
-            let layout = 'fhd';
 
-            // Google Nest Hub (2nd gen): 1280x800, 16:10
-            if (w <= 1400 && ratio >= 1.52 && ratio <= 1.68) {
+            // Nest Hub (2nd gen) は 1280×800 固定。それ以外の 720p/1080p Chromecast は FHD レイアウト。
+            const isNestHub =
+                w >= 1200 && w <= 1360 &&
+                h >= 780 && h <= 840 &&
+                ratio >= 1.52 && ratio <= 1.62;
+
+            let layout = 'fhd';
+            if (isNestHub) {
                 layout = 'nest-hub';
-            } else if (w <= 1400 || h <= 820) {
+            } else if (w < 1100 || h < 650) {
                 layout = 'compact';
             }
 
