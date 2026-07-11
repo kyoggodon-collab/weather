@@ -442,6 +442,118 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            position: relative;
+        }
+
+        .week-grid-layout {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0;
+            overflow: hidden;
+            transition: grid-template-columns 0.55s ease, gap 0.55s ease;
+        }
+
+        .week-grid.spotlight-active .week-grid-layout {
+            grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+            gap: calc(var(--u) * 0.65);
+        }
+
+        .week-cal-wrap {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            transition: opacity 0.45s ease, transform 0.55s ease;
+        }
+
+        .week-grid.spotlight-active .week-cal-wrap {
+            transform: translateX(0);
+        }
+
+        .week-spotlight {
+            display: none;
+            min-width: 0;
+            min-height: 0;
+            flex-direction: column;
+            justify-content: center;
+            gap: calc(var(--u) * 0.55);
+            padding: calc(var(--u) * 0.85) calc(var(--u) * 0.95);
+            border-radius: calc(var(--u) * 1.1);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: linear-gradient(145deg, rgba(98, 200, 255, 0.16), rgba(255, 255, 255, 0.05));
+            box-shadow: 0 calc(var(--u) * 0.8) calc(var(--u) * 2.2) rgba(0, 0, 0, 0.28);
+            opacity: 0;
+            transform: translateX(calc(var(--u) * 1.2));
+            transition: opacity 0.45s ease, transform 0.55s ease;
+        }
+
+        .week-grid.spotlight-active .week-spotlight {
+            display: flex;
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .week-spotlight-label {
+            color: var(--accent);
+            font-size: calc(var(--u) * 1.05);
+            font-weight: 500;
+            letter-spacing: 0.06em;
+        }
+
+        .week-spotlight-countdown {
+            color: var(--warn);
+            font-size: calc(var(--u) * 2.2);
+            font-weight: 500;
+            line-height: 1.05;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .week-spotlight-time {
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.35);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .week-spotlight-title {
+            color: var(--text);
+            font-size: calc(var(--u) * 2.45);
+            font-weight: 600;
+            line-height: 1.18;
+            word-break: break-word;
+        }
+
+        .week-spotlight-location {
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.15);
+            line-height: 1.35;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .week-grid.spotlight-active .week-cal-head,
+        .week-grid.spotlight-active .week-cal-allday {
+            grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
+            transition: grid-template-columns 0.55s ease;
+        }
+
+        .week-grid.spotlight-active .week-cal-day-head:not(.spotlight-focus),
+        .week-grid.spotlight-active .week-cal-allday-col:not(.spotlight-focus),
+        .week-grid.spotlight-active .week-cal-col:not(.spotlight-focus) {
+            display: none;
+        }
+
+        .week-grid.spotlight-active .week-cal-columns {
+            grid-template-columns: minmax(0, 1fr);
+            transition: grid-template-columns 0.55s ease;
+        }
+
+        .week-cal-day-head.spotlight-focus,
+        .week-cal-col.spotlight-focus {
+            background: rgba(98, 200, 255, 0.06);
         }
 
         .week-cal {
@@ -874,7 +986,122 @@
         let clockSecondsNode = null;
         let clockDateNode = null;
         let renderFrame = null;
+        let spotlightTimer = null;
+        let lastSpotlightKey = '';
+        const PRE_START_MS = 10 * 60 * 1000;
+        const SPOTLIGHT_ON_MS = 20 * 1000;
+        const SPOTLIGHT_CYCLE_MS = 60 * 1000;
         const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
+
+        function findSpotlightEvent(events, nowMs) {
+            const timed = (Array.isArray(events) ? events : [])
+                .filter((event) => !event.allDay)
+                .map((event) => ({
+                    event,
+                    start: Number(event.start),
+                    end: Number(event.end),
+                }))
+                .filter(({ start, end }) => Number.isFinite(start) && Number.isFinite(end) && end > nowMs)
+                .sort((a, b) => a.start - b.start);
+
+            return timed.find(({ start }) => {
+                return nowMs >= start - PRE_START_MS && nowMs < start;
+            }) || null;
+        }
+
+        function isSpotlightPhase(nowMs, eventStartMs) {
+            const windowStart = eventStartMs - PRE_START_MS;
+            if (nowMs < windowStart || nowMs >= eventStartMs) return false;
+            const elapsed = nowMs - windowStart;
+            return (elapsed % SPOTLIGHT_CYCLE_MS) < SPOTLIGHT_ON_MS;
+        }
+
+        function formatSpotlightCountdown(nowMs, startMs) {
+            const totalSec = Math.max(0, Math.ceil((startMs - nowMs) / 1000));
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            if (min > 0) return `あと ${min}分${sec > 0 ? ` ${sec}秒` : ''}`;
+            return `あと ${sec}秒`;
+        }
+
+        function renderSpotlightPanel(target, spotlight, nowMs) {
+            if (!target || !spotlight) {
+                if (target) target.innerHTML = '';
+                return;
+            }
+
+            const { event, start, end } = spotlight;
+            const color = colorToCss(event.color);
+            const title = escapeHtml(cleanText(event.title, '無題'));
+            const location = cleanText(event.location, '');
+            target.style.borderLeftColor = color;
+            target.style.background = `linear-gradient(145deg, ${color}33, rgba(255, 255, 255, 0.05))`;
+            target.innerHTML = `
+                <div class="week-spotlight-label">まもなく開始</div>
+                <div class="week-spotlight-countdown">${escapeHtml(formatSpotlightCountdown(nowMs, start))}</div>
+                <div class="week-spotlight-time">${escapeHtml(formatEventBlockTime(start, end))}</div>
+                <div class="week-spotlight-title">${title}</div>
+                ${location ? `<div class="week-spotlight-location">${escapeHtml(location)}</div>` : ''}
+            `;
+        }
+
+        function getWeekDayIndex(dateMs) {
+            const weekStart = startOfWeekSunday(new Date()).getTime();
+            const dayStart = startOfDay(new Date(dateMs)).getTime();
+            return Math.round((dayStart - weekStart) / 86400000);
+        }
+
+        function applySpotlightDayFocus(grid, active, dayIndex) {
+            if (!grid) return;
+            grid.querySelectorAll('[data-week-day]').forEach((node) => {
+                const index = Number(node.dataset.weekDay);
+                node.classList.toggle('spotlight-focus', active && index === dayIndex);
+            });
+        }
+
+        function updateCalendarSpotlight() {
+            const grid = el('weekGrid');
+            const panel = el('weekSpotlight');
+            if (!grid) return;
+
+            const nowMs = Date.now();
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            const spotlight = findSpotlightEvent(events, nowMs);
+            const active = spotlight ? isSpotlightPhase(nowMs, spotlight.start) : false;
+            const dayIndex = spotlight ? getWeekDayIndex(spotlight.start) : -1;
+            const nextKey = active && spotlight
+                ? `${spotlight.event.id}:${spotlight.start}:on`
+                : spotlight
+                    ? `${spotlight.event.id}:${spotlight.start}:off`
+                    : 'none';
+
+            grid.classList.toggle('spotlight-active', active);
+            applySpotlightDayFocus(grid, active, dayIndex);
+            if (active && spotlight) {
+                renderSpotlightPanel(panel, spotlight, nowMs);
+            } else if (panel) {
+                panel.innerHTML = '';
+            }
+
+            if (nextKey !== lastSpotlightKey) {
+                lastSpotlightKey = nextKey;
+            }
+        }
+
+        function startSpotlightLoop() {
+            if (spotlightTimer) {
+                clearInterval(spotlightTimer);
+            }
+            updateCalendarSpotlight();
+            spotlightTimer = setInterval(updateCalendarSpotlight, 250);
+        }
+
+        function stopSpotlightLoop() {
+            if (spotlightTimer) {
+                clearInterval(spotlightTimer);
+                spotlightTimer = null;
+            }
+        }
 
         function detectLayout() {
             // 解像度判定でリスト形式へ落ちないよう、常に週間カレンダー(FHD)レイアウトを使う
@@ -1343,7 +1570,7 @@
                     sameDay(day, today) ? 'today' : '',
                 ].filter(Boolean).join(' ');
                 return `
-                    <div class="${classes}">
+                    <div class="${classes}" data-week-day="${index}">
                         <span class="week-dow">${dayNames[index]}</span>
                         <span class="week-date-num">${day.getDate()}</span>
                     </div>
@@ -1358,7 +1585,7 @@
                     .sort((a, b) => Number(a.start) - Number(b.start) || cleanText(a.title).localeCompare(cleanText(b.title), 'ja'));
 
                 return `
-                    <div class="week-cal-allday-col">
+                    <div class="week-cal-allday-col${sameDay(day, today) ? ' today-col' : ''}" data-week-day="${index}">
                         ${alldayEvents.map((event) => `
                             <div class="week-cal-allday-event" style="border-left-color:${colorToCss(event.color)};background:${colorToCss(event.color)}33">
                                 ${escapeHtml(cleanText(event.title, '無題'))}
@@ -1401,7 +1628,7 @@
 
                 const classes = ['week-cal-col', sameDay(day, today) ? 'today' : ''].filter(Boolean).join(' ');
                 return `
-                    <div class="${classes}">
+                    <div class="${classes}" data-week-day="${index}">
                         <div class="week-cal-col-lines">${hourLines}</div>
                         ${eventsHtml}
                     </div>
@@ -1409,21 +1636,27 @@
             }).join('');
 
             grid.innerHTML = `
-                <div class="week-cal">
-                    <div class="week-cal-head">
-                        <div class="week-cal-corner"></div>
-                        ${headHtml}
+                <div class="week-grid-layout">
+                    <div class="week-cal-wrap">
+                        <div class="week-cal">
+                            <div class="week-cal-head">
+                                <div class="week-cal-corner"></div>
+                                ${headHtml}
+                            </div>
+                            <div class="week-cal-allday">
+                                <div class="week-cal-allday-label"></div>
+                                ${alldayHtml}
+                            </div>
+                            <div class="week-cal-body">
+                                <div class="week-cal-times">${timeLabels}</div>
+                                <div class="week-cal-columns">${columnsHtml}</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="week-cal-allday">
-                        <div class="week-cal-allday-label"></div>
-                        ${alldayHtml}
-                    </div>
-                    <div class="week-cal-body">
-                        <div class="week-cal-times">${timeLabels}</div>
-                        <div class="week-cal-columns">${columnsHtml}</div>
-                    </div>
+                    <aside id="weekSpotlight" class="week-spotlight" aria-live="polite"></aside>
                 </div>
             `;
+            updateCalendarSpotlight();
         }
 
         function drawRadar() {
@@ -1686,6 +1919,7 @@
 
         window.addEventListener('resize', refreshLayoutViews);
         startLocalClock();
+        startSpotlightLoop();
         detectLayout();
         startCastReceiver();
         render();
