@@ -449,18 +449,13 @@
             flex: 1;
             min-height: 0;
             height: 100%;
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
-            gap: 0;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        .week-grid.spotlight-active .week-grid-layout {
-            grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
-            gap: calc(var(--u) * 0.75);
-        }
-
         .week-cal-wrap {
+            flex: 1;
             min-width: 0;
             min-height: 0;
             height: 100%;
@@ -479,11 +474,31 @@
             transition: transform 0.52s ease-out;
         }
 
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal {
+            width: var(--spot-cal-w, 100%);
+            min-width: var(--spot-cal-w, 100%);
+            max-width: var(--spot-cal-w, 100%);
+            flex: 0 0 auto;
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-head,
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-allday {
+            grid-template-columns: var(--spot-gutter-w, calc(var(--u) * 4.2)) repeat(7, var(--spot-day-col-w, 1fr));
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-cal-columns {
+            grid-template-columns: repeat(7, var(--spot-day-col-w, 1fr));
+        }
+
         .week-spotlight {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 46%;
+            min-width: calc(var(--u) * 34);
+            z-index: 5;
             display: flex;
-            min-width: 0;
-            min-height: 0;
-            height: 100%;
             flex-direction: column;
             justify-content: center;
             gap: calc(var(--u) * 0.72);
@@ -1116,9 +1131,42 @@
         }
 
         function getWeekDayIndex(dateMs) {
-            const weekStart = startOfWeekSunday(new Date()).getTime();
-            const dayStart = startOfDay(new Date(dateMs)).getTime();
-            return Math.round((dayStart - weekStart) / 86400000);
+            const weekStart = startOfWeekSunday(new Date());
+            const eventDay = startOfDay(new Date(dateMs));
+            const index = Math.round((eventDay.getTime() - weekStart.getTime()) / 86400000);
+            return Math.max(0, Math.min(6, index));
+        }
+
+        function captureSpotlightMetrics(grid) {
+            const wrap = grid.querySelector('.week-cal-wrap');
+            const day0 = grid.querySelector('.week-cal-day-head[data-week-day="0"]');
+            const day1 = grid.querySelector('.week-cal-day-head[data-week-day="1"]');
+            const times = grid.querySelector('.week-cal-times');
+            if (!wrap || !day0 || !day1 || !times) return false;
+
+            const dayColW = Math.max(1, Math.round(day1.getBoundingClientRect().left - day0.getBoundingClientRect().left));
+            const gutterW = Math.round(times.offsetWidth);
+            const calW = Math.round(wrap.clientWidth);
+
+            grid.dataset.spotDayColW = String(dayColW);
+            grid.dataset.spotGutterW = String(gutterW);
+            grid.dataset.spotCalW = String(calW);
+            wrap.style.setProperty('--spot-day-col-w', `${dayColW}px`);
+            wrap.style.setProperty('--spot-gutter-w', `${gutterW}px`);
+            wrap.style.setProperty('--spot-cal-w', `${calW}px`);
+            return true;
+        }
+
+        function clearSpotlightMetrics(grid) {
+            const wrap = grid.querySelector('.week-cal-wrap');
+            delete grid.dataset.spotDayColW;
+            delete grid.dataset.spotGutterW;
+            delete grid.dataset.spotCalW;
+            if (wrap) {
+                wrap.style.removeProperty('--spot-day-col-w');
+                wrap.style.removeProperty('--spot-gutter-w');
+                wrap.style.removeProperty('--spot-cal-w');
+            }
         }
 
         function syncSpotlightCalendarView(grid, dayIndex, active) {
@@ -1136,21 +1184,19 @@
                 return;
             }
 
+            if (!grid.dataset.spotDayColW && !captureSpotlightMetrics(grid)) return;
+
+            const dayColW = Number(grid.dataset.spotDayColW);
             const times = grid.querySelector('.week-cal-times');
-            const day0Head = grid.querySelector('.week-cal-day-head[data-week-day="0"]');
-            const day1Head = grid.querySelector('.week-cal-day-head[data-week-day="1"]');
-            const day0Col = grid.querySelector('.week-cal-col[data-week-day="0"]');
-            const focusCol = grid.querySelector(`.week-cal-col[data-week-day="${dayIndex}"]`);
-            if (!times || !day0Head || !day1Head || !day0Col || !focusCol) return;
+            if (!times || !Number.isFinite(dayColW) || dayColW <= 0) return;
 
-            const dayColW = Math.max(1, day1Head.offsetLeft - day0Head.offsetLeft);
             const wrapRect = wrap.getBoundingClientRect();
-            const clipLeft = Math.max(0, Math.round(times.getBoundingClientRect().left - wrapRect.left));
+            const timesRect = times.getBoundingClientRect();
+            const clipLeft = Math.max(0, Math.round(timesRect.left - wrapRect.left));
             const clipRight = Math.max(0, Math.round(wrapRect.width - clipLeft - dayColW));
-            wrap.style.clipPath = `inset(0 ${clipRight}px 0 ${clipLeft}px)`;
 
-            const shift = day0Col.offsetLeft - focusCol.offsetLeft;
-            cal.style.transform = `translateX(${shift}px)`;
+            wrap.style.clipPath = `inset(0 ${clipRight}px 0 ${clipLeft}px)`;
+            cal.style.transform = `translateX(${-dayIndex * dayColW}px)`;
         }
 
         function applySpotlightDayFocus(grid, active, dayIndex) {
@@ -1176,6 +1222,7 @@
                 grid.classList.remove('spotlight-leaving');
 
                 if (!isLayoutActive) {
+                    captureSpotlightMetrics(grid);
                     grid.classList.add('spotlight-active');
                     requestAnimationFrame(() => {
                         requestAnimationFrame(() => {
@@ -1201,6 +1248,7 @@
 
                 spotlightAnimTimer = setTimeout(() => {
                     grid.classList.remove('spotlight-active', 'spotlight-leaving');
+                    clearSpotlightMetrics(grid);
                     const panel = el('weekSpotlight');
                     if (panel) panel.innerHTML = '';
                 }, SPOTLIGHT_ANIM_MS);
@@ -1210,6 +1258,7 @@
             if (!visible) {
                 grid.classList.remove('spotlight-show', 'spotlight-active', 'spotlight-leaving');
                 syncSpotlightCalendarView(grid, -1, false);
+                clearSpotlightMetrics(grid);
             }
         }
 
@@ -1835,8 +1884,8 @@
                             </div>
                         </div>
                     </div>
-                    <aside id="weekSpotlight" class="week-spotlight" aria-live="polite"></aside>
                 </div>
+                <aside id="weekSpotlight" class="week-spotlight" aria-live="polite"></aside>
             `;
             updateCalendarSpotlight();
         }
