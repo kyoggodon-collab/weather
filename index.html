@@ -467,6 +467,32 @@
             pointer-events: auto;
         }
 
+        .graph-panel.mode-event {
+            overflow: visible;
+            z-index: 1;
+        }
+
+        .graph-panel.mode-event .graph-body {
+            overflow: visible;
+        }
+
+        .graph-view-events {
+            position: relative;
+        }
+
+        .graph-panel.mode-event .graph-view-events::before {
+            content: '';
+            position: absolute;
+            left: calc(-1 * var(--u) * 0.65 - var(--u) * 0.28);
+            top: calc(-1 * var(--u) * 0.55);
+            bottom: calc(-1 * var(--u) * 0.55);
+            width: calc(var(--u) * 0.28);
+            background: var(--event-accent, var(--accent));
+            border-radius: 999px;
+            pointer-events: none;
+            z-index: 3;
+        }
+
         #pressureCanvas {
             display: block;
             width: 100%;
@@ -488,35 +514,17 @@
             flex-direction: column;
             justify-content: center;
             gap: calc(var(--u) * 0.38);
-            padding: calc(var(--u) * 0.35) 0 calc(var(--u) * 0.35) calc(var(--u) * 0.55);
-            border-left: calc(var(--u) * 0.35) solid var(--event-accent, var(--accent));
+            padding: calc(var(--u) * 0.35) 0;
             background: transparent;
             opacity: 0;
             visibility: hidden;
-            overflow: hidden;
+            overflow: visible;
             transition: opacity 0.32s ease-out, visibility 0.32s ease-out;
         }
 
         .event-card.is-active {
             opacity: 1;
             visibility: visible;
-        }
-
-        .event-card-steps {
-            display: flex;
-            gap: calc(var(--u) * 0.28);
-            margin-bottom: calc(var(--u) * 0.15);
-        }
-
-        .event-card-step {
-            flex: 1;
-            height: calc(var(--u) * 0.18);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.14);
-        }
-
-        .event-card-step.is-active {
-            background: var(--event-accent, var(--accent));
         }
 
         .event-card-label {
@@ -1209,22 +1217,10 @@
             `;
         }
 
-        function buildEventStepsHtml(index, total) {
-            if (total <= 1) return '';
-            return `
-                <div class="event-card-steps" aria-hidden="true">
-                    ${Array.from({ length: total }, (_, stepIndex) => `
-                        <span class="event-card-step${stepIndex === index ? ' is-active' : ''}"></span>
-                    `).join('')}
-                </div>
-            `;
-        }
-
         function buildEventCardHtml(spotlight, nowMs, index, total) {
             const { event, start, end } = spotlight;
             const title = escapeHtml(cleanText(event.title, '無題'));
             return `
-                ${buildEventStepsHtml(index, total)}
                 <div class="event-card-label">まもなく開始</div>
                 <div class="event-card-title">${title}</div>
                 ${buildEventScheduleHtml(start, end, nowMs)}
@@ -1232,26 +1228,25 @@
             `;
         }
 
+        function applySpotlightAccent(graphPanel, group, activeIndex) {
+            if (!graphPanel || !group || activeIndex < 0) {
+                graphPanel?.style.removeProperty('--event-accent');
+                return;
+            }
+            graphPanel.style.setProperty('--event-accent', colorToCss(group.items[activeIndex].event.color));
+        }
+
         function renderEventCards(cardsRoot, group, nowMs, activeIndex) {
-            cardsRoot.innerHTML = group.items.map((spotlight, index) => {
-                const color = colorToCss(spotlight.event.color);
-                return `
-                    <article
-                        class="event-card${index === activeIndex ? ' is-active' : ''}"
-                        style="--event-accent:${color}"
-                    >
-                        ${buildEventCardHtml(spotlight, nowMs, index, group.items.length)}
-                    </article>
-                `;
-            }).join('');
+            cardsRoot.innerHTML = group.items.map((spotlight, index) => `
+                <article class="event-card${index === activeIndex ? ' is-active' : ''}">
+                    ${buildEventCardHtml(spotlight, nowMs, index, group.items.length)}
+                </article>
+            `).join('');
         }
 
         function setActiveEventCard(cardsRoot, activeIndex) {
             cardsRoot.querySelectorAll('.event-card').forEach((node, index) => {
                 node.classList.toggle('is-active', index === activeIndex);
-                node.querySelectorAll('.event-card-step').forEach((step, stepIndex) => {
-                    step.classList.toggle('is-active', stepIndex === activeIndex);
-                });
             });
         }
 
@@ -1283,6 +1278,7 @@
                 : '';
 
             if (!showEvent) {
+                graphPanel.style.removeProperty('--event-accent');
                 if (lastSpotlightGroupKey) {
                     cardsRoot.innerHTML = '';
                     lastSpotlightGroupKey = '';
@@ -1294,6 +1290,7 @@
 
             if (groupKey !== lastSpotlightGroupKey) {
                 renderEventCards(cardsRoot, group, nowMs, activeIndex);
+                applySpotlightAccent(graphPanel, group, activeIndex);
                 lastSpotlightGroupKey = groupKey;
                 lastSpotlightActiveIndex = activeIndex;
                 lastSpotlightMinuteKey = '';
@@ -1302,6 +1299,7 @@
 
             if (activeIndex !== lastSpotlightActiveIndex) {
                 setActiveEventCard(cardsRoot, activeIndex);
+                applySpotlightAccent(graphPanel, group, activeIndex);
                 lastSpotlightActiveIndex = activeIndex;
             }
 
