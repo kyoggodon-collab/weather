@@ -413,10 +413,10 @@
 
         .daily-week-temps {
             display: flex;
-            gap: 0.2em;
-            font-size: calc(var(--u) * 0.72);
-            font-weight: 500;
-            line-height: 1.1;
+            gap: 0.15em;
+            font-size: calc(var(--u) * 0.54);
+            font-weight: 400;
+            line-height: 1;
         }
 
         .daily-week-temps .temp-high { color: var(--temp-high); }
@@ -875,8 +875,7 @@
             <div class="top-row">
                 <section class="panel hourly-panel">
                     <div class="panel-title">
-                        <span>1時間おき</span>
-                        <span class="panel-subtitle">6時間</span>
+                        <span>天気</span>
                     </div>
                     <div class="hourly-panel-body">
                         <div id="hourlyGrid" class="hourly-grid"></div>
@@ -1470,119 +1469,88 @@
             if (!canvas || !wrap) return Promise.resolve();
 
             const drawToken = ++radarDrawToken;
-            const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 1), 2);
-            const cssWidth = Math.max(1, wrap.clientWidth);
-            const cssHeight = Math.max(1, wrap.clientHeight);
-            canvas.width = Math.floor(cssWidth * dpr);
-            canvas.height = Math.floor(cssHeight * dpr);
-            canvas.style.width = `${cssWidth}px`;
-            canvas.style.height = `${cssHeight}px`;
+            const ratio = window.devicePixelRatio || 1;
+            const width = Math.max(1, wrap.clientWidth);
+            const height = Math.max(1, wrap.clientHeight);
+            canvas.width = Math.floor(width * ratio);
+            canvas.height = Math.floor(height * ratio);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
 
             const ctx = canvas.getContext('2d');
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.imageSmoothingEnabled = false;
             ctx.fillStyle = '#1a1f28';
-            ctx.fillRect(0, 0, cssWidth, cssHeight);
+            ctx.fillRect(0, 0, width, height);
 
             const lat = Number(uiState.manualLat);
             const lon = Number(uiState.manualLon);
             const meta = uiState.weather?.nowcastMeta;
-
-            // 地理院は詳細ズーム。HiDPI ではさらに1段上げてタイルの引き伸ばしを抑える
-            // 気象庁ナウキャストは最大 z=10 のため、地図より粗くても拡大して重ねる
-            const mapZoom = dpr >= 1.5 ? 13 : 12;
-            const radarZoom = 10;
-            const radarScale = Math.pow(2, mapZoom - radarZoom);
+            const zoom = 10;
 
             if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
                 ctx.fillStyle = '#687080';
-                ctx.font = `${Math.max(12, cssWidth * 0.04)}px sans-serif`;
+                ctx.font = `${Math.max(12, width * 0.04)}px sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText('位置情報を待っています', cssWidth / 2, cssHeight / 2);
+                ctx.fillText('位置情報を待っています', width / 2, height / 2);
                 return Promise.resolve();
             }
 
-            const center = latLonToPixel(lat, lon, mapZoom);
-            const topLeftX = center.x - cssWidth / 2;
-            const topLeftY = center.y - cssHeight / 2;
-
-            // 標準地図の方が pale より線がシャープ
-            const gsiBase = 'https://cyberjapandata.gsi.go.jp/xyz/std/';
+            const center = latLonToPixel(lat, lon, zoom);
+            const topLeftX = center.x - width / 2;
+            const topLeftY = center.y - height / 2;
+            const startTx = Math.floor(topLeftX / TILE_SIZE);
+            const startTy = Math.floor(topLeftY / TILE_SIZE);
+            const endTx = Math.floor((topLeftX + width) / TILE_SIZE);
+            const endTy = Math.floor((topLeftY + height) / TILE_SIZE);
+            const gsiBase = 'https://cyberjapandata.gsi.go.jp/xyz/pale/';
             const jmaBase = meta
                 ? `https://www.jma.go.jp/bosai/jmatile/data/nowc/${meta.basetime}/none/${meta.validtime}/surf/hrpns/`
                 : null;
 
-            const gsiStartTx = Math.floor(topLeftX / TILE_SIZE);
-            const gsiStartTy = Math.floor(topLeftY / TILE_SIZE);
-            const gsiEndTx = Math.floor((topLeftX + cssWidth) / TILE_SIZE);
-            const gsiEndTy = Math.floor((topLeftY + cssHeight) / TILE_SIZE);
-
-            const gsiJobs = [];
-            for (let ty = gsiStartTy; ty <= gsiEndTy; ty++) {
-                for (let tx = gsiStartTx; tx <= gsiEndTx; tx++) {
-                    gsiJobs.push({
-                        drawX: tx * TILE_SIZE - topLeftX,
-                        drawY: ty * TILE_SIZE - topLeftY,
-                        url: `${gsiBase}${mapZoom}/${tx}/${ty}.png`,
+            const jobs = [];
+            for (let ty = startTy; ty <= endTy; ty++) {
+                for (let tx = startTx; tx <= endTx; tx++) {
+                    jobs.push({
+                        tx,
+                        ty,
+                        drawX: Math.round(tx * TILE_SIZE - topLeftX),
+                        drawY: Math.round(ty * TILE_SIZE - topLeftY),
                     });
                 }
             }
 
-            const jmaJobs = [];
-            if (jmaBase) {
-                const jmaTopLeftX = topLeftX / radarScale;
-                const jmaTopLeftY = topLeftY / radarScale;
-                const jmaEndX = (topLeftX + cssWidth) / radarScale;
-                const jmaEndY = (topLeftY + cssHeight) / radarScale;
-                const jmaStartTx = Math.floor(jmaTopLeftX / TILE_SIZE);
-                const jmaStartTy = Math.floor(jmaTopLeftY / TILE_SIZE);
-                const jmaEndTx = Math.floor(jmaEndX / TILE_SIZE);
-                const jmaEndTy = Math.floor(jmaEndY / TILE_SIZE);
-                const drawSize = TILE_SIZE * radarScale;
-
-                for (let ty = jmaStartTy; ty <= jmaEndTy; ty++) {
-                    for (let tx = jmaStartTx; tx <= jmaEndTx; tx++) {
-                        jmaJobs.push({
-                            drawX: tx * drawSize - topLeftX,
-                            drawY: ty * drawSize - topLeftY,
-                            drawSize,
-                            url: `${jmaBase}${radarZoom}/${tx}/${ty}.png`,
-                        });
-                    }
-                }
-            }
-
-            const urls = [
-                ...gsiJobs.map((job) => job.url),
-                ...jmaJobs.map((job) => job.url),
-            ];
+            const urls = [];
+            jobs.forEach(({ tx, ty }) => {
+                urls.push(`${gsiBase}${zoom}/${tx}/${ty}.png`);
+                if (jmaBase) urls.push(`${jmaBase}${zoom}/${tx}/${ty}.png`);
+            });
 
             return Promise.all(urls.map(loadImage)).then(() => {
                 if (drawToken !== radarDrawToken) return;
 
-                gsiJobs.forEach(({ drawX, drawY, url }) => {
-                    const gsiImg = radarImageCache.get(url);
+                jobs.forEach(({ tx, ty, drawX, drawY }) => {
+                    const gsiImg = radarImageCache.get(`${gsiBase}${zoom}/${tx}/${ty}.png`);
                     if (gsiImg && !(gsiImg instanceof Promise)) {
                         ctx.drawImage(gsiImg, drawX, drawY, TILE_SIZE, TILE_SIZE);
                     }
                 });
 
-                if (jmaJobs.length > 0) {
+                if (jmaBase) {
                     ctx.save();
-                    ctx.globalAlpha = 0.58;
-                    jmaJobs.forEach(({ drawX, drawY, drawSize, url }) => {
-                        const jmaImg = radarImageCache.get(url);
+                    ctx.globalAlpha = 0.55;
+                    jobs.forEach(({ tx, ty, drawX, drawY }) => {
+                        const jmaImg = radarImageCache.get(`${jmaBase}${zoom}/${tx}/${ty}.png`);
                         if (jmaImg && !(jmaImg instanceof Promise)) {
-                            ctx.drawImage(jmaImg, drawX, drawY, drawSize, drawSize);
+                            ctx.drawImage(jmaImg, drawX, drawY, TILE_SIZE, TILE_SIZE);
                         }
                     });
                     ctx.restore();
                 }
 
-                const pinX = cssWidth / 2;
-                const pinY = cssHeight / 2;
+                const pinX = width / 2;
+                const pinY = height / 2;
                 ctx.fillStyle = '#4caf50';
                 ctx.beginPath();
                 ctx.arc(pinX, pinY - 7, 8, 0, Math.PI * 2);
@@ -1600,10 +1568,10 @@
 
                 if (!jmaBase) {
                     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-                    ctx.font = `${Math.max(11, cssWidth * 0.028)}px sans-serif`;
+                    ctx.font = `${Math.max(11, width * 0.028)}px sans-serif`;
                     ctx.textAlign = 'right';
                     ctx.textBaseline = 'bottom';
-                    ctx.fillText('レーダー待機中', cssWidth - 8, cssHeight - 8);
+                    ctx.fillText('レーダー待機中', width - 8, height - 8);
                 }
             });
         }
