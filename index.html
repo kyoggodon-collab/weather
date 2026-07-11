@@ -324,28 +324,29 @@
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: calc(var(--u) * 0.28);
-            height: calc(var(--u) * 6.4);
+            height: calc(var(--u) * 5.8);
             flex-shrink: 0;
         }
 
         .daily-week-grid {
             flex: 1;
-            min-height: calc(var(--u) * 4.2);
+            min-height: calc(var(--u) * 6.2);
             display: grid;
             grid-template-columns: repeat(7, minmax(0, 1fr));
-            gap: calc(var(--u) * 0.22);
-            align-content: end;
+            gap: calc(var(--u) * 0.24);
+            align-content: stretch;
         }
 
 
         .daily-week-cell {
             min-width: 0;
+            min-height: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
-            gap: calc(var(--u) * 0.06);
-            padding: calc(var(--u) * 0.12) calc(var(--u) * 0.06);
+            justify-content: center;
+            gap: calc(var(--u) * 0.14);
+            padding: calc(var(--u) * 0.2) calc(var(--u) * 0.08);
             border-radius: calc(var(--u) * 0.45);
             background: rgba(255, 255, 255, 0.045);
         }
@@ -356,7 +357,7 @@
 
         .daily-week-dow {
             color: var(--text);
-            font-size: calc(var(--u) * 0.82);
+            font-size: calc(var(--u) * 0.9);
             font-weight: 600;
             line-height: 1;
             letter-spacing: 0.04em;
@@ -367,14 +368,14 @@
         }
 
         .daily-week-icon {
-            font-size: calc(var(--u) * 1.15);
+            font-size: calc(var(--u) * 1.45);
             line-height: 1;
         }
 
         .daily-week-temps {
             display: flex;
             gap: 0.12em;
-            font-size: calc(var(--u) * 0.78);
+            font-size: calc(var(--u) * 0.88);
             font-weight: 400;
             line-height: 1;
             font-variant-numeric: tabular-nums;
@@ -390,25 +391,25 @@
 
         .daily-week-pop {
             color: var(--pop-color);
-            font-size: calc(var(--u) * 0.72);
+            font-size: calc(var(--u) * 0.8);
             font-weight: 500;
             line-height: 1;
             font-variant-numeric: tabular-nums;
         }
 
         html[data-layout="nest-hub"] .hourly-grid {
-            height: calc(var(--u) * 6.2);
+            height: calc(var(--u) * 5.6);
         }
 
         .hour-card {
             min-width: 0;
             min-height: 0;
             display: grid;
-            grid-template-rows: auto auto auto;
+            grid-template-rows: auto auto auto auto;
             place-items: center;
             align-content: center;
-            gap: calc(var(--u) * 0.08);
-            padding: calc(var(--u) * 0.18) calc(var(--u) * 0.12);
+            gap: calc(var(--u) * 0.06);
+            padding: calc(var(--u) * 0.16) calc(var(--u) * 0.1);
             border-radius: calc(var(--u) * 0.55);
             background: var(--panel-strong);
         }
@@ -426,6 +427,14 @@
         .hour-temp {
             font-size: calc(var(--u) * 1.05);
             font-weight: 500;
+        }
+
+        .hour-pop {
+            color: var(--pop-color);
+            font-size: calc(var(--u) * 0.82);
+            font-weight: 500;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
         }
 
         .graph-panel {
@@ -1632,11 +1641,13 @@
             }
             grid.innerHTML = hours.map((hour) => {
                 const temp = round(hour.temp);
+                const pop = round(hour.pop);
                 return `
                     <div class="hour-card">
                         <div class="hour-time">${escapeHtml(normalizeTimeLabel(hour.time || ''))}</div>
                         <div class="hour-icon">${weatherEmoji(hour.condition, hour.isNight)}</div>
                         <div class="hour-temp">${temp === null ? '--' : temp}℃</div>
+                        <div class="hour-pop">${pop === null ? '--%' : `${pop}%`}</div>
                     </div>
                 `;
             }).join('');
