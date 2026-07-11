@@ -453,12 +453,13 @@
             grid-template-columns: minmax(0, 1fr) minmax(0, 0fr);
             gap: 0;
             overflow: hidden;
-            transition: grid-template-columns 0.55s ease, gap 0.55s ease;
+            transition: grid-template-columns 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                gap 0.68s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .week-grid.spotlight-active .week-grid-layout {
-            grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-            gap: calc(var(--u) * 0.65);
+            grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+            gap: calc(var(--u) * 0.75);
         }
 
         .week-cal-wrap {
@@ -469,11 +470,15 @@
             flex-direction: column;
             overflow: hidden;
             opacity: 1;
-            transition: opacity 0.55s ease;
+            transform: translateX(0) scale(1);
+            transform-origin: left center;
+            transition: opacity 0.55s ease,
+                transform 0.68s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .week-grid.spotlight-active:not(.spotlight-show) .week-cal-wrap {
-            opacity: 0.92;
+        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-wrap {
+            transform: translateX(calc(var(--u) * -0.2)) scale(0.985);
+            opacity: 0.96;
         }
 
         .week-spotlight {
@@ -482,84 +487,128 @@
             min-height: 0;
             flex-direction: column;
             justify-content: center;
-            gap: calc(var(--u) * 0.55);
-            padding: calc(var(--u) * 0.85) calc(var(--u) * 0.95);
+            gap: calc(var(--u) * 0.72);
+            padding: calc(var(--u) * 1.05) calc(var(--u) * 1.15);
             border-radius: calc(var(--u) * 1.1);
             border: 1px solid rgba(255, 255, 255, 0.16);
+            border-left-width: calc(var(--u) * 0.42);
             background: linear-gradient(145deg, rgba(98, 200, 255, 0.16), rgba(255, 255, 255, 0.05));
             box-shadow: 0 calc(var(--u) * 0.8) calc(var(--u) * 2.2) rgba(0, 0, 0, 0.28);
             opacity: 0;
             overflow: hidden;
             pointer-events: none;
-            transition: opacity 0.55s ease;
+            transform: translateX(calc(var(--u) * 3.2));
+            transition: transform 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.48s ease;
         }
 
-        .week-grid.spotlight-show .week-spotlight {
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-spotlight {
             opacity: 1;
+            transform: translateX(0);
             pointer-events: auto;
         }
+
+        .week-grid.spotlight-leaving .week-spotlight {
+            opacity: 0;
+            transform: translateX(calc(var(--u) * 2.4));
+            pointer-events: none;
+        }
+
+        .week-spotlight > * {
+            opacity: 0;
+            transform: translateY(calc(var(--u) * 0.55));
+            transition: opacity 0.45s ease,
+                transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .week-grid.spotlight-show:not(.spotlight-leaving) .week-spotlight > * {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .week-grid.spotlight-leaving .week-spotlight > * {
+            opacity: 0;
+            transform: translateY(calc(var(--u) * 0.35));
+            transition-duration: 0.35s;
+        }
+
+        .week-spotlight-label { transition-delay: 0.04s; }
+        .week-spotlight-countdown { transition-delay: 0.1s; }
+        .week-spotlight-title { transition-delay: 0.16s; }
+        .week-spotlight-meta { transition-delay: 0.22s; }
 
         .week-grid.spotlight-active .week-cal-head,
         .week-grid.spotlight-active .week-cal-allday {
             grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
-            transition: grid-template-columns 0.55s ease;
+            transition: grid-template-columns 0.68s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
-        .week-grid.spotlight-active .week-cal-day-head:not(.spotlight-focus),
-        .week-grid.spotlight-active .week-cal-allday-col:not(.spotlight-focus),
-        .week-grid.spotlight-active .week-cal-col:not(.spotlight-focus) {
+        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-day-head:not(.spotlight-focus),
+        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-allday-col:not(.spotlight-focus),
+        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-col:not(.spotlight-focus) {
             opacity: 0;
             visibility: hidden;
             overflow: hidden;
             pointer-events: none;
-            transition: opacity 0.45s ease, visibility 0.45s ease;
+            max-width: 0;
+            min-width: 0;
+            padding-left: 0;
+            padding-right: 0;
+            border-color: transparent;
+            transform: translateX(calc(var(--u) * -0.75)) scale(0.94);
+            transition: opacity 0.42s ease,
+                max-width 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                visibility 0.68s;
         }
 
-        .week-grid.spotlight-show.spotlight-active .week-cal-day-head:not(.spotlight-focus),
-        .week-grid.spotlight-show.spotlight-active .week-cal-allday-col:not(.spotlight-focus),
-        .week-grid.spotlight-show.spotlight-active .week-cal-col:not(.spotlight-focus) {
-            display: none;
+        .week-grid.spotlight-active:not(.spotlight-show):not(.spotlight-leaving) .week-cal-day-head:not(.spotlight-focus),
+        .week-grid.spotlight-active:not(.spotlight-show):not(.spotlight-leaving) .week-cal-allday-col:not(.spotlight-focus),
+        .week-grid.spotlight-active:not(.spotlight-show):not(.spotlight-leaving) .week-cal-col:not(.spotlight-focus) {
+            opacity: 0.35;
+            visibility: visible;
+            transform: translateX(0) scale(1);
         }
 
         .week-spotlight-label {
             color: var(--accent);
-            font-size: calc(var(--u) * 1.05);
-            font-weight: 500;
-            letter-spacing: 0.06em;
+            font-size: calc(var(--u) * 1.42);
+            font-weight: 600;
+            letter-spacing: 0.08em;
         }
 
         .week-spotlight-countdown {
             color: var(--warn);
-            font-size: calc(var(--u) * 2.2);
-            font-weight: 500;
+            font-size: calc(var(--u) * 3.6);
+            font-weight: 600;
             line-height: 1.05;
             font-variant-numeric: tabular-nums;
         }
 
         .week-spotlight-time {
             color: var(--muted);
-            font-size: calc(var(--u) * 1.35);
+            font-size: calc(var(--u) * 1.65);
             font-variant-numeric: tabular-nums;
         }
 
         .week-spotlight-meta {
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.28);
+            gap: calc(var(--u) * 0.38);
         }
 
         .week-spotlight-meta-row {
             display: grid;
-            grid-template-columns: calc(var(--u) * 3.2) minmax(0, 1fr);
-            gap: calc(var(--u) * 0.35);
+            grid-template-columns: calc(var(--u) * 3.6) minmax(0, 1fr);
+            gap: calc(var(--u) * 0.45);
             align-items: baseline;
-            font-size: calc(var(--u) * 1.12);
+            font-size: calc(var(--u) * 1.55);
             line-height: 1.35;
         }
 
         .week-spotlight-meta-label {
             color: var(--dim);
-            font-size: calc(var(--u) * 0.92);
+            font-size: calc(var(--u) * 1.18);
             white-space: nowrap;
         }
 
@@ -571,15 +620,15 @@
 
         .week-spotlight-title {
             color: var(--text);
-            font-size: calc(var(--u) * 2.45);
-            font-weight: 600;
-            line-height: 1.18;
+            font-size: calc(var(--u) * 3.5);
+            font-weight: 700;
+            line-height: 1.16;
             word-break: break-word;
         }
 
         .week-spotlight-location {
             color: var(--muted);
-            font-size: calc(var(--u) * 1.15);
+            font-size: calc(var(--u) * 1.55);
             line-height: 1.35;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -590,7 +639,7 @@
 
         .week-spotlight-description {
             color: var(--muted);
-            font-size: calc(var(--u) * 1.05);
+            font-size: calc(var(--u) * 1.42);
             line-height: 1.45;
             overflow: hidden;
             display: -webkit-box;
@@ -601,7 +650,7 @@
 
         .week-grid.spotlight-active .week-cal-columns {
             grid-template-columns: minmax(0, 1fr);
-            transition: grid-template-columns 0.55s ease;
+            transition: grid-template-columns 0.68s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .week-cal-day-head.spotlight-focus,
@@ -609,12 +658,32 @@
         .week-cal-col.spotlight-focus {
             opacity: 1;
             visibility: visible;
-            transition: opacity 0.45s ease;
+            max-width: none;
+            transform: translateX(0) scale(1);
+            transition: opacity 0.48s ease,
+                transform 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                max-width 0.68s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .week-grid.spotlight-show.spotlight-active:not(.spotlight-leaving) .week-cal-col.spotlight-focus {
+            transform: scale(1.015);
         }
 
         .week-cal-day-head.spotlight-focus,
         .week-cal-col.spotlight-focus {
-            background: rgba(98, 200, 255, 0.06);
+            background: rgba(98, 200, 255, 0.08);
+        }
+
+        .week-grid.spotlight-leaving .week-cal-day-head,
+        .week-grid.spotlight-leaving .week-cal-allday-col,
+        .week-grid.spotlight-leaving .week-cal-col {
+            opacity: 1;
+            visibility: visible;
+            max-width: none;
+            transform: translateX(0) scale(1);
+            transition: opacity 0.52s ease 0.08s,
+                transform 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.06s,
+                max-width 0.68s cubic-bezier(0.22, 1, 0.36, 1) 0.06s;
         }
 
         .week-cal {
@@ -632,6 +701,7 @@
             grid-template-columns: calc(var(--u) * 4.2) repeat(7, minmax(0, 1fr));
             gap: 0;
             min-width: 0;
+            transition: grid-template-columns 0.68s cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         .week-cal-head {
@@ -766,6 +836,16 @@
             display: grid;
             grid-template-columns: repeat(7, minmax(0, 1fr));
             border-left: 1px solid var(--border);
+            transition: grid-template-columns 0.68s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .week-cal-day-head,
+        .week-cal-allday-col,
+        .week-cal-col {
+            transition: opacity 0.48s ease,
+                transform 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                max-width 0.68s cubic-bezier(0.22, 1, 0.36, 1),
+                visibility 0.68s;
         }
 
         .week-cal-col {
@@ -1053,7 +1133,7 @@
         let spotlightTimer = null;
         let spotlightAnimTimer = null;
         let lastSpotlightKey = '';
-        const SPOTLIGHT_FADE_MS = 550;
+        const SPOTLIGHT_ANIM_MS = 680;
         const PRE_START_MS = 10 * 60 * 1000;
         const SPOTLIGHT_ON_MS = 20 * 1000;
         const SPOTLIGHT_CYCLE_MS = 60 * 1000;
@@ -1162,36 +1242,43 @@
         function setSpotlightVisible(grid, visible) {
             if (!grid) return;
             const isLayoutActive = grid.classList.contains('spotlight-active');
+            const isShowing = grid.classList.contains('spotlight-show');
+            const isLeaving = grid.classList.contains('spotlight-leaving');
 
-            if (visible && !isLayoutActive) {
+            if (visible) {
                 clearTimeout(spotlightAnimTimer);
-                grid.classList.add('spotlight-active');
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => grid.classList.add('spotlight-show'));
-                });
-                return;
-            }
+                grid.classList.remove('spotlight-leaving');
 
-            if (visible && isLayoutActive) {
-                clearTimeout(spotlightAnimTimer);
+                if (!isLayoutActive) {
+                    grid.classList.add('spotlight-active');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => grid.classList.add('spotlight-show'));
+                    });
+                    return;
+                }
+
                 grid.classList.add('spotlight-show');
                 return;
             }
 
-            if (!visible && grid.classList.contains('spotlight-show')) {
-                grid.classList.remove('spotlight-show');
+            if (!visible && isLeaving) return;
+
+            if (!visible && (isShowing || isLayoutActive)) {
                 clearTimeout(spotlightAnimTimer);
+                grid.classList.add('spotlight-leaving');
+                grid.classList.remove('spotlight-show');
+                applySpotlightDayFocus(grid, false, -1);
+
                 spotlightAnimTimer = setTimeout(() => {
-                    grid.classList.remove('spotlight-active');
-                    applySpotlightDayFocus(grid, false, -1);
+                    grid.classList.remove('spotlight-active', 'spotlight-leaving');
                     const panel = el('weekSpotlight');
                     if (panel) panel.innerHTML = '';
-                }, SPOTLIGHT_FADE_MS);
+                }, SPOTLIGHT_ANIM_MS);
                 return;
             }
 
-            if (!visible && !isLayoutActive) {
-                grid.classList.remove('spotlight-show', 'spotlight-active');
+            if (!visible) {
+                grid.classList.remove('spotlight-show', 'spotlight-active', 'spotlight-leaving');
             }
         }
 
@@ -1220,8 +1307,10 @@
                     : 'none';
 
             setSpotlightVisible(grid, active);
-            if (active || grid.classList.contains('spotlight-active')) {
-                applySpotlightDayFocus(grid, active || grid.classList.contains('spotlight-show'), dayIndex);
+            if (active) {
+                applySpotlightDayFocus(grid, true, dayIndex);
+            } else if (!grid.classList.contains('spotlight-leaving')) {
+                applySpotlightDayFocus(grid, false, -1);
             }
             if (active && spotlight) {
                 const nextPanel = buildSpotlightPanelHtml(spotlight, nowMs);
