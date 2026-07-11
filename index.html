@@ -3,285 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Dashboard for Nest Hub</title>
+    <title>Weather Dashboard v3.0</title>
     <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background-color: black; color: white;
+            background-color: #000; color: #fff;
             font-family: 'Roboto', sans-serif; overflow: hidden;
         }
         #app {
-            display: grid;
-            /* Nest Hub (1024px) に合わせた比率設定 */
-            grid-template-columns: 28% 41% 31%;
-            grid-template-rows: 64% 36%;
-            width: 100vw; height: 100vh;
-            box-sizing: border-box;
-            padding: 8px;
-            gap: 8px;
-        }
-
-        /* 共通パネルスタイル */
-        .panel {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 10px;
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-sizing: border-box;
+            width: 100vw; height: 100vh;
+            padding: 10px; box-sizing: border-box;
+            gap: 10px;
         }
 
-        /* 時計 & 現在の天気 (左上) */
-        .clock-panel {
-            grid-column: 1;
-            grid-row: 1;
-            align-items: center;
-            justify-content: center;
+        /* 左カラム (30%): 時計 + 現在の天気 */
+        .left-col {
+            width: 30%; display: flex; flex-direction: column; gap: 10px;
         }
+        .panel {
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 12px; padding: 15px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .clock-panel { flex: 1; align-items: center; }
         .time { font-size: 72px; font-weight: 100; line-height: 1; }
-        .date { font-size: 18px; color: #aaa; margin-top: 4px; }
-        .current-weather {
-            margin-top: 15px;
-            text-align: center;
-        }
-        .current-temp { font-size: 36px; font-weight: bold; }
-        .current-condition { font-size: 16px; color: #888; }
+        .date { font-size: 18px; color: #aaa; margin-top: 5px; }
+        .current-weather { margin-top: 20px; text-align: center; }
+        .current-temp { font-size: 42px; font-weight: bold; }
 
-        /* 1時間予報 (中央上) */
-        .hourly-panel {
-            grid-column: 2;
-            grid-row: 1;
+        /* 中央カラム (40%): 1時間予報 + 気圧グラフ */
+        .mid-col {
+            width: 40%; display: flex; flex-direction: column; gap: 10px;
         }
+        .hourly-panel { flex: 3; }
         .hourly-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            height: 100%;
-            gap: 6px;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr); height: 100%; gap: 6px;
         }
         .hour-item {
-            background: rgba(255,255,255,0.03);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2px;
+            background: rgba(255,255,255,0.03); border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .hour-time { font-size: 12px; color: #888; }
-        .hour-emoji { font-size: 28px; margin: 2px 0; }
-        .hour-temp { font-size: 16px; font-weight: bold; }
-
-        /* カレンダー (右側) */
-        .calendar-panel {
-            grid-column: 3;
-            grid-row: 1 / span 2;
-        }
-        .calendar-title { font-size: 16px; font-weight: bold; color: #ffff00; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .event-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: hidden; }
-        .event-item {
-            border-left: 3px solid #444;
-            padding-left: 8px;
-            padding-bottom: 2px;
-        }
-        .event-name { font-size: 14px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .event-time { font-size: 11px; color: #888; }
-
-        /* 気圧グラフ (左・中央下) */
-        .graph-panel {
-            grid-column: 1 / span 2;
-            grid-row: 2;
-            position: relative;
-        }
-        .graph-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .graph-title { font-size: 12px; color: #888; }
-        .canvas-container { flex: 1; position: relative; min-height: 0; }
+        .graph-panel { flex: 2; position: relative; min-height: 0; }
         canvas { width: 100% !important; height: 100% !important; }
 
-        /* 通信インジケータ */
-        .now-indicator {
-            position: absolute;
-            top: 8px; right: 8px;
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #00ff00;
-            box-shadow: 0 0 5px #00ff00;
+        /* 右カラム (30%): カレンダー予定 */
+        .right-col {
+            width: 30%; display: flex; flex-direction: column;
         }
+        .calendar-panel { flex: 1; background: rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 15px; }
+        .cal-title { font-size: 18px; font-weight: bold; color: #ffff00; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .event-list { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        .event-item { border-left: 4px solid #555; padding-left: 10px; }
+        .event-name { font-size: 15px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .event-time { font-size: 12px; color: #888; }
+
+        /* バージョン表記 (デバッグ用) */
+        .version { position: absolute; bottom: 5px; left: 5px; font-size: 10px; color: #333; }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- 左上: 時計 & 現在の天気 -->
-        <div class="panel clock-panel">
-            <div class="time">{{ currentTime }}</div>
-            <div class="date">{{ currentDate }}</div>
-            <div v-if="uiState.weather" class="current-weather">
-                <div class="current-temp">{{ Math.round(uiState.weather.temp) }}℃</div>
-                <div class="current-condition">{{ getWeatherEmoji(uiState.weather.condition) }} {{ uiState.weather.condition }}</div>
-            </div>
-        </div>
-
-        <!-- 中央上: 1時間予報 (8時間分) -->
-        <div class="panel hourly-panel">
-            <div class="hourly-grid">
-                <div v-for="h in nextHourly" :key="h.time" class="hour-item">
-                    <div class="hour-time">{{ h.time }}</div>
-                    <div class="hour-emoji">{{ getWeatherEmoji(h.condition, h.isNight) }}</div>
-                    <div class="hour-temp">{{ Math.round(h.temp) }}℃</div>
+        <div class="left-col">
+            <div class="panel clock-panel">
+                <div class="time">{{ currentTime }}</div>
+                <div class="date">{{ currentDate }}</div>
+                <div v-if="uiState.weather" class="current-weather">
+                    <div class="current-temp">{{ Math.round(uiState.weather.temp) }}℃</div>
+                    <div style="color:#888">{{ getWeatherEmoji(uiState.weather.condition) }} {{ uiState.weather.condition }}</div>
                 </div>
             </div>
         </div>
 
-        <!-- 右側: カレンダー -->
-        <div class="panel calendar-panel">
-            <div class="calendar-title">Upcoming Schedule</div>
-            <div class="event-list">
-                <div v-for="ev in upcomingEvents" :key="ev.start" class="event-item" :style="{ borderLeftColor: ev.color }">
-                    <div class="event-name">{{ ev.title }}</div>
-                    <div class="event-time">{{ formatEventTime(ev) }}</div>
+        <div class="mid-col">
+            <div class="panel hourly-panel">
+                <div class="hourly-grid">
+                    <div v-for="h in nextHourly" :key="h.time" class="hour-item">
+                        <div style="font-size:12px;color:#888">{{ h.time }}</div>
+                        <div style="font-size:28px;margin:2px 0">{{ getWeatherEmoji(h.condition, h.isNight) }}</div>
+                        <div style="font-size:16px;font-weight:bold">{{ Math.round(h.temp) }}℃</div>
+                    </div>
                 </div>
-                <div v-if="upcomingEvents.length === 0" style="color: #555; text-align: center; margin-top: 20px;">No events</div>
             </div>
-        </div>
-
-        <!-- 下部: 気圧グラフ -->
-        <div class="panel graph-panel">
-            <div class="graph-header">
-                <span class="graph-title">Pressure Trend (hPa)</span>
-            </div>
-            <div class="canvas-container">
+            <div class="panel graph-panel">
+                <div style="font-size:12px;color:#888;margin-bottom:5px">Pressure (hPa)</div>
                 <canvas id="pressureChart"></canvas>
             </div>
-            <div v-if="lastUpdate" class="now-indicator"></div>
         </div>
+
+        <div class="right-col">
+            <div class="calendar-panel">
+                <div class="cal-title">Schedule</div>
+                <div class="event-list">
+                    <div v-for="ev in upcomingEvents" :key="ev.start" class="event-item" :style="{ borderLeftColor: ev.color }">
+                        <div class="event-name">{{ ev.title }}</div>
+                        <div class="event-time">{{ formatEventTime(ev) }}</div>
+                    </div>
+                    <div v-if="upcomingEvents.length === 0" style="color:#555;text-align:center;margin-top:20px">No events</div>
+                </div>
+            </div>
+        </div>
+        <div class="version">v3.0</div>
     </div>
 
     <script>
         const { createApp, ref, computed, onMounted, watch } = Vue;
-
         createApp({
             setup() {
                 const uiState = ref({});
                 const localTime = ref(new Date());
-                const lastUpdate = ref('');
 
-                // Cast Receiver Setup
                 const context = cast.framework.CastReceiverContext.getInstance();
                 context.addCustomMessageListener('urn:x-cast:jp.kyogg.weatherinfo', (event) => {
-                    try {
-                        const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                        uiState.value = data;
-                        lastUpdate.value = new Date().toLocaleTimeString();
-                    } catch (e) {
-                        console.error("Cast Data Error:", e);
-                    }
+                    uiState.value = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 });
                 context.start();
 
-                // Local Clock
-                onMounted(() => {
-                    setInterval(() => {
-                        localTime.value = new Date();
-                    }, 1000);
-                });
+                onMounted(() => { setInterval(() => { localTime.value = new Date(); }, 1000); });
 
                 const currentTime = computed(() => {
-                    if (uiState.value.currentTime) return uiState.value.currentTime;
-                    const h = String(localTime.value.getHours()).padStart(2, '0');
-                    const m = String(localTime.value.getMinutes()).padStart(2, '0');
-                    return `${h}:${m}`;
+                    const t = uiState.value.currentTime || `${String(localTime.value.getHours()).padStart(2,'0')}:${String(localTime.value.getMinutes()).padStart(2,'0')}`;
+                    return t;
                 });
-
-                const currentDate = computed(() => {
-                    if (uiState.value.currentDate) return uiState.value.currentDate;
-                    return localTime.value.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' });
-                });
-
+                const currentDate = computed(() => uiState.value.currentDate || localTime.value.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'short' }));
+                
                 const nextHourly = computed(() => {
-                    if (!uiState.value.weather || !uiState.value.weather.hourlyForecast) return [];
-                    // currentHour がない場合は0から、ある場合はそこから8つ
-                    const start = uiState.value.currentHour || 0;
-                    return uiState.value.weather.hourlyForecast.slice(start, start + 8);
+                    if (!uiState.value.weather?.hourlyForecast) return [];
+                    return uiState.value.weather.hourlyForecast.slice(uiState.value.currentHour || 0, (uiState.value.currentHour || 0) + 8);
                 });
 
                 const upcomingEvents = computed(() => {
                     if (!uiState.value.calendarEvents) return [];
-                    const now = new Date().getTime();
-                    // 終了していないイベントを表示
-                    return uiState.value.calendarEvents
-                        .filter(e => e.end > now)
-                        .slice(0, 10);
+                    const now = Date.now();
+                    return uiState.value.calendarEvents.filter(e => e.end > now).slice(0, 8);
                 });
 
                 const getWeatherEmoji = (c, isNight) => {
-                    if (!c) return '❓';
-                    const main = c.split('_')[0];
+                    const main = (c || '').split('_')[0];
                     if (main === 'Clear') return isNight ? '🌙' : '☀️';
-                    const map = {
-                        'Clear': '☀️',
-                        'Clouds': '☁️',
-                        'Rain': '☔',
-                        'Snow': '❄️',
-                        'Thunder': '⚡'
-                    };
-                    return map[main] || '❓';
+                    return {'Clouds':'☁️','Rain':'☔','Snow':'❄️','Thunder':'⚡'}[main] || '❓';
                 };
 
                 const formatEventTime = (ev) => {
-                    if (ev.allDay) return '終日';
                     const s = new Date(ev.start);
-                    return `${s.getMonth()+1}/${s.getDate()} ${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
+                    return ev.allDay ? '終日' : `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
                 };
 
-                // Chart Logic
                 let chart = null;
-                watch(() => uiState.value.weather, (weather) => {
-                    if (!weather || !weather.hourlyForecast) return;
-                    const canvas = document.getElementById('pressureChart');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    const data = weather.hourlyForecast.slice(0, 24);
-
+                watch(() => uiState.value.weather, (w) => {
+                    if (!w?.hourlyForecast) return;
+                    const ctx = document.getElementById('pressureChart').getContext('2d');
                     if (chart) chart.destroy();
                     chart = new Chart(ctx, {
                         type: 'line',
                         data: {
-                            labels: data.map(h => h.time),
-                            datasets: [{
-                                data: data.map(h => h.pressure),
-                                borderColor: '#00BFFF',
-                                borderWidth: 2,
-                                pointRadius: 0,
-                                tension: 0.3,
-                                fill: false
-                            }]
+                            labels: w.hourlyForecast.slice(0, 24).map(h => h.time),
+                            datasets: [{ data: w.hourlyForecast.slice(0, 24).map(h => h.pressure), borderColor: '#00BFFF', borderWidth: 2, pointRadius: 0, tension: 0.3 }]
                         },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                y: {
-                                    grid: { color: 'rgba(255,255,255,0.1)' },
-                                    ticks: { color: '#888', font: { size: 10 } }
-                                },
-                                x: {
-                                    grid: { display: false },
-                                    ticks: { color: '#888', font: { size: 10 }, maxTicksLimit: 12 }
-                                }
-                            }
-                        }
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#666', font: { size: 10 } }, grid: { color: '#333' } } } }
                     });
                 }, { deep: true });
 
-                return {
-                    uiState, currentTime, currentDate, nextHourly, upcomingEvents,
-                    getWeatherEmoji, formatEventTime, lastUpdate
-                };
+                return { uiState, currentTime, currentDate, nextHourly, upcomingEvents, getWeatherEmoji, formatEventTime };
             }
         }).mount('#app');
     </script>
