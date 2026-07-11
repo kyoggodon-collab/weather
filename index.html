@@ -237,20 +237,6 @@
             text-align: center;
         }
 
-        .condition {
-            margin-top: calc(var(--u) * 0.12);
-            color: var(--muted);
-            font-size: calc(var(--u) * 1.15);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            text-align: center;
-        }
-
-        .condition.is-hidden {
-            display: none;
-        }
-
         .temp {
             font-size: calc(var(--u) * 5.4);
             font-weight: 500;
@@ -666,6 +652,7 @@
             position: absolute;
             inset: 0;
             pointer-events: none;
+            /* 表示範囲は 8:30 始まりだが、横線は 9:00〜22:00 の整点（0分）に合わせる */
             background-image: repeating-linear-gradient(
                 to bottom,
                 rgba(255, 255, 255, 0.06) 0,
@@ -673,6 +660,7 @@
                 transparent 1px,
                 transparent calc(100% / 14)
             );
+            background-position: 0 calc(100% / 28);
         }
 
         .week-cal-col.today {
@@ -868,7 +856,6 @@
                     <div id="currentIcon" class="weather-icon">--</div>
                     <div class="weather-main">
                         <div id="currentTemp" class="temp">--℃</div>
-                        <div id="condition" class="condition">スマホからのデータを待っています</div>
                     </div>
                 </div>
                 <div class="temp-range">
@@ -1074,31 +1061,6 @@
             return '☁️';
         }
 
-        function conditionLabelJa(condition) {
-            const labels = {
-                Clear: '晴れ',
-                Clouds: 'くもり',
-                Rain: '雨',
-                Snow: '雪',
-                Thunder: '雷雨',
-                Fog: '霧',
-                Clear_Occ_Clouds: '晴れ時々くもり',
-                Clear_Tmp_Rain: '晴れ一時雨',
-                Clear_To_Clouds: '晴れのちくもり',
-                Clear_To_Rain: '晴れのち雨',
-                Clouds_Occ_Clear: 'くもり時々晴れ',
-                Clouds_Tmp_Rain: 'くもり一時雨',
-                Clouds_To_Clear: 'くもりのち晴れ',
-                Clouds_To_Rain: 'くもりのち雨',
-                Rain_Occ_Clear: '雨時々晴れ',
-                Rain_To_Clear: '雨のち晴れ',
-                Rain_To_Clouds: '雨のちくもり',
-                Rain_Occ_Clouds: '雨時々くもり',
-            };
-            const key = cleanText(condition, '');
-            return labels[key] || '';
-        }
-
         function colorToCss(color) {
             if (typeof color === 'string' && color.trim().startsWith('#')) return color.trim();
             if (typeof color !== 'number') return '#62c8ff';
@@ -1196,8 +1158,6 @@
             if (!weather) {
                 setText('currentIcon', '--');
                 setText('currentTemp', '--℃');
-                setText('condition', 'スマホからのデータを待っています');
-                el('condition')?.classList.remove('is-hidden');
                 setHtml('tempMax', `--<span class="temp-unit">℃</span>`);
                 setHtml('tempMin', `--<span class="temp-unit">℃</span>`);
                 setText('pop', '降水 --%');
@@ -1212,9 +1172,6 @@
 
             setText('currentIcon', weatherEmoji(weather.condition));
             setText('currentTemp', temp === null ? '--℃' : `${temp}℃`);
-            const conditionJa = conditionLabelJa(weather.condition);
-            setText('condition', conditionJa);
-            el('condition')?.classList.toggle('is-hidden', !conditionJa);
             setHtml('tempMax', `${tempMax === null ? '--' : tempMax}<span class="temp-unit">℃</span>`);
             setHtml('tempMin', `${tempMin === null ? '--' : tempMin}<span class="temp-unit">℃</span>`);
             setText('pop', pop === null ? '降水 --%' : `降水 ${pop}%`);
