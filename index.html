@@ -1040,9 +1040,9 @@
         const fmt2 = (n) => String(n).padStart(2, '0');
         const fmtClockTime = (date) => `${date.getHours()}:${fmt2(date.getMinutes())}`;
         let clockPollTimer = null;
-        let clockRaf = null;
-        let clockWorker = null;
-        let clockWorkerUrl = null;
+        let clockOffsetMs = 0;
+        let lastPhoneClockAt = 0;
+        const PHONE_CLOCK_STALE_MS = 5000;
         let lastClockSecond = -1;
         let lastClockMinute = '';
         let lastClockDate = '';
@@ -1416,6 +1416,21 @@
             return hourly.slice(start, start + 6);
         }
 
+        function getSyncedNow() {
+            if (Date.now() - lastPhoneClockAt < PHONE_CLOCK_STALE_MS) {
+                return new Date(Date.now() + clockOffsetMs);
+            }
+            return new Date();
+        }
+
+        function applyPhoneClockSync(epochMs) {
+            const remote = Number(epochMs);
+            if (!Number.isFinite(remote)) return;
+            clockOffsetMs = remote - Date.now();
+            lastPhoneClockAt = Date.now();
+            renderClock(getSyncedNow());
+        }
+
         function getClockNodes() {
             if (!clockTimeNode) clockTimeNode = el('time');
             if (!clockSecondsNode) clockSecondsNode = el('seconds');
@@ -1424,26 +1439,14 @@
         }
 
         function stopLocalClock() {
-            if (clockRaf) {
-                cancelAnimationFrame(clockRaf);
-                clockRaf = null;
-            }
             if (clockPollTimer) {
                 clearTimeout(clockPollTimer);
                 clockPollTimer = null;
             }
-            if (clockWorker) {
-                clockWorker.terminate();
-                clockWorker = null;
-            }
-            if (clockWorkerUrl) {
-                URL.revokeObjectURL(clockWorkerUrl);
-                clockWorkerUrl = null;
-            }
         }
 
         function renderClock() {
-            const now = new Date();
+            const now = getSyncedNow();
             const sec = now.getSeconds();
             const timeStr = fmtClockTime(now);
             const secStr = fmt2(sec);
@@ -1473,16 +1476,15 @@
             lastClockSecond = sec;
         }
 
-        function startClockWorker() {
-            if (typeof Worker === 'undefined') return;
-            try {
-                const workerCode = 'setInterval(function(){postMessage(1);},1000);';
-                clockWorkerUrl = URL.createObjectURL(new Blob([workerCode], { type: 'application/javascript' }));
-                clockWorker = new Worker(clockWorkerUrl);
-                clockWorker.onmessage = () => renderClock();
-            } catch (error) {
-                console.warn('Clock worker unavailable', error);
+        function ingestCastPayload(raw) {
+            const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (data && data._clock === true) {
+                applyPhoneClockSync(data.t);
+                return true;
             }
+            uiState = data || { calendarEvents: [] };
+            scheduleRender();
+            return false;
         }
 
         function startLocalClock() {
@@ -1490,21 +1492,11 @@
             lastClockSecond = -1;
             renderClock();
 
-            const rafLoop = () => {
+            const poll = () => {
                 renderClock();
-                clockRaf = requestAnimationFrame(rafLoop);
+                clockPollTimer = setTimeout(poll, 125);
             };
-            clockRaf = requestAnimationFrame(rafLoop);
-
-            startClockWorker();
-
-            const scheduleBackupPoll = () => {
-                clockPollTimer = setTimeout(() => {
-                    renderClock();
-                    scheduleBackupPoll();
-                }, 125);
-            };
-            scheduleBackupPoll();
+            poll();
         }
 
         function renderWeather() {
@@ -2065,8 +2057,7 @@
             const context = cast.framework.CastReceiverContext.getInstance();
             context.addCustomMessageListener(NAMESPACE, (event) => {
                 try {
-                    uiState = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                    scheduleRender();
+                    ingestCastPayload(event.data);
                 } catch (error) {
                     console.error('Failed to parse cast message', error);
                 }
