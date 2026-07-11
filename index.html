@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Info Receiver</title>
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: black; color: white;
+            font-family: 'Roboto', sans-serif; overflow: hidden;
+        }
+        #app { display: flex; width: 100vw; height: 100vh; padding: 20px; box-sizing: border-box; }
+
+        /* Left Column */
+        .sidebar { flex: 0 0 35%; display: flex; flex-direction: column; align-items: center; padding-right: 20px; }
+        .clock-section { text-align: center; margin-bottom: 40px; cursor: pointer; }
+        .time-row { display: flex; align-items: baseline; justify-content: center; }
+        .time-big { font-size: 140px; font-weight: 100; line-height: 1; }
+        .seconds { font-size: 60px; font-weight: 200; color: #aaa; margin-left: 15px; }
+        .date-text { font-size: 36px; font-weight: 300; color: #aaa; margin-top: 10px; }
+
+        .weather-card {
+            width: 100%; background: rgba(255,255,255,0.08); border-radius: 15px;
+            padding: 20px; margin-bottom: 20px; display: flex; flex-direction: column;
+        }
+        .hourly-scroll {
+            display: flex; overflow-x: auto; gap: 20px; padding-bottom: 10px;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .hourly-scroll::-webkit-scrollbar { display: none; }
+        .hour-item { flex: 0 0 80px; text-align: center; }
+        .hour-time { font-size: 18px; color: #888; }
+        .hour-temp { font-size: 24px; font-weight: bold; margin: 5px 0; }
+
+        .rotating-section { width: 100%; flex: 1; position: relative; margin-top: 20px; }
+        .graph-container { width: 100%; height: 300px; background: rgba(0,0,0,0.3); border: 1px solid rgba(128,128,128,0.3); border-radius: 15px; padding: 15px; }
+
+        /* Right Column (Calendar) */
+        .calendar-container {
+            flex: 1; position: relative; display: flex; flex-direction: column;
+            border-left: 1px solid rgba(255,255,255,0.1);
+        }
+        .calendar-header-viewport {
+            margin-left: 60px; overflow: hidden; height: 180px; position: relative;
+        }
+        .calendar-header-row {
+            display: flex; transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .day-column { width: 220px; flex: 0 0 220px; text-align: center; position: relative; box-sizing: border-box; }
+        .day-column::after {
+            content: ""; position: absolute; right: 0; top: 0; bottom: 0;
+            width: 1px; background: rgba(128,128,128,0.3);
+        }
+        .day-label { font-size: 24px; font-weight: bold; padding: 10px 0; color: #ccc; }
+        .day-label.today-label { color: #ffff00; }
+
+        .calendar-body-viewport {
+            flex: 1; display: flex; overflow: hidden; margin-left: 60px; position: relative;
+        }
+        .time-axis {
+            position: absolute; left: -60px; top: 0; bottom: 0; width: 60px;
+            background: black; z-index: 10; display: flex; flex-direction: column;
+        }
+        .axis-hour { height: 120px; display: flex; align-items: start; justify-content: center; font-size: 20px; color: #666; }
+
+        .calendar-grid {
+            display: flex; height: calc(120px * 24 * 14); position: relative;
+            transition: transform 0.5s ease-out;
+        }
+        .grid-lane { width: 220px; flex: 0 0 220px; position: relative; }
+        .grid-lane::after {
+            content: ""; position: absolute; right: 0; top: 0; bottom: 0;
+            width: 1px; background: rgba(128,128,128,0.3);
+        }
+        .hour-line { position: absolute; left: 0; right: 0; height: 1px; background: rgba(128,128,128,0.3); }
+        .day-boundary { position: absolute; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.6); }
+
+        .event-card {
+            position: absolute; left: 2px; right: 2px; border-radius: 6px;
+            padding: 8px; color: white; overflow: hidden;
+            display: flex; flex-direction: column; gap: 2px;
+            box-sizing: border-box;
+        }
+        .event-title { font-size: 16px; font-weight: bold; white-space: pre-wrap; line-height: 1.2; }
+        .event-time { font-size: 12px; opacity: 0.9; }
+        .event-loc { font-size: 11px; opacity: 0.8; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+
+        .now-indicator { position: absolute; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.8); z-index: 5; }
+
+        /* Weather Icons (CSS simple version) */
+        .icon-box { width: 50px; height: 50px; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+        .forecast-mini { display: flex; justify-content: space-around; margin-top: 10px; font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Left Side -->
+        <div class="sidebar">
+            <div class="clock-section">
+                <div class="time-row">
+                    <span class="time-big">{{ uiState.currentTime || '--:--' }}</span>
+                    <span class="seconds">{{ uiState.currentSeconds || '00' }}</span>
+                </div>
+                <div class="date-text">{{ uiState.currentDate || '----年-月-日(-)' }}</div>
+            </div>
+
+            <div v-if="uiState.weather" class="weather-card">
+                <div class="hourly-scroll">
+                    <div v-for="h in uiState.weather.hourlyForecast.slice(uiState.currentHour, uiState.currentHour+24)" class="hour-item">
+                        <div class="hour-time">{{ h.time }}</div>
+                        <div class="icon-box">{{ getWeatherEmoji(h.condition, h.isNight) }}</div>
+                        <div class="hour-temp">{{ Math.round(h.temp) }}℃</div>
+                    </div>
+                </div>
+                <div class="forecast-mini">
+                    <span>最高: <strong style="color:#ff4500">{{ uiState.weather.tempMax }}℃</strong></span>
+                    <span>最低: <strong style="color:#1e90ff">{{ uiState.weather.tempMin }}℃</strong></span>
+                </div>
+            </div>
+
+            <div class="rotating-section">
+                <div v-show="!showingRadar" class="graph-container">
+                    <canvas id="pressureChart"></canvas>
+                </div>
+                <div v-show="showingRadar" style="text-align: center; padding-top: 50px;">
+                    <div style="font-size: 40px; opacity: 0.5;">雨雲レーダー</div>
+                    <div style="font-size: 18px; color: #666; margin-top: 10px;">(GSI/JMA Tiles Integration)</div>
+                </div>
+            </div>
+
+            <div style="margin-top: auto; color: #444; font-size: 12px;">Data: JMA / Open-Meteo / GSI</div>
+        </div>
+
+        <!-- Right Side (Calendar) -->
+        <div class="calendar-container">
+            <!-- Headers Layer -->
+            <div class="calendar-header-viewport">
+                <div class="calendar-header-row" :style="{ transform: 'translateX(' + (-headerX) + 'px)' }">
+                    <div v-for="(day, idx) in days" :key="idx" class="day-column">
+                        <div class="day-label" :class="{ 'today-label': idx === verticalDayOffset }">{{ day.label }}</div>
+                        <div v-if="day.weather" style="font-size: 14px; color: #aaa;">
+                            {{ getWeatherEmoji(day.weather.condition, false) }} {{ Math.round(day.weather.tempMax) }} / {{ Math.round(day.weather.tempMin) }}
+                        </div>
+                        <!-- All Day Events -->
+                        <div style="margin-top: 5px; height: 50px; overflow: hidden;">
+                            <div v-for="ev in day.allDayEvents" class="event-card" :style="{ background: ev.color + '80', position: 'relative', height: '20px', padding: '2px 5px', marginBottom: '2px' }">
+                                <span class="event-title" style="font-size: 12px;">{{ ev.title }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Body Layer -->
+            <div class="calendar-body-viewport">
+                <!-- Static Axis -->
+                <div class="time-axis" :style="{ transform: 'translateY(' + (-scrollY) + 'px)' }">
+                    <div v-for="h in Array.from({length: 14*24}, (_, i) => i % 24)" class="axis-hour">{{ h }}</div>
+                </div>
+
+                <!-- Sliding Grid -->
+                <div class="calendar-grid" :style="{ transform: 'translateY(' + (-scrollY) + 'px)' }">
+                    <div v-for="dayIdx in 14" :key="dayIdx" class="grid-lane">
+                        <!-- Horizontal Grid Lines -->
+                        <div v-for="h in 14*24" class="hour-line" :style="{ top: (h * 120) + 'px' }"></div>
+                        <div v-for="d in 14" class="day-boundary" :style="{ top: (d * 24 * 120) + 'px' }"></div>
+
+                        <!-- Events -->
+                        <div v-for="ev in getPlacedEvents(dayIdx-1)" class="event-card"
+                             :style="{
+                                top: ev.y + 'px', height: ev.h + 'px',
+                                background: ev.color + 'b3',
+                                left: (ev.col * (100/ev.total)) + '%',
+                                width: (100/ev.total) + '%'
+                             }">
+                            <div class="event-title">{{ formatTitle(ev.title) }}</div>
+                            <div class="event-time">{{ ev.timeStr }}</div>
+                            <div v-if="ev.location" class="event-loc">{{ ev.location }}</div>
+                        </div>
+
+                        <!-- Now Indicator (Lane 0 only) -->
+                        <div v-if="dayIdx === 1" class="now-indicator" :style="{ top: nowY + 'px' }"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, computed, watch } = Vue;
+
+        createApp({
+            setup() {
+                const uiState = ref({});
+                const showingRadar = ref(false);
+                const scrollY = ref(0);
+                const headerX = ref(0);
+                const verticalDayOffset = ref(0);
+                const laneWidth = 220;
+                const hourHeight = 120;
+                let chart = null;
+
+                const days = computed(() => {
+                    if (!uiState.value.currentDate) return [];
+                    const results = [];
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+
+                    for (let i = 0; i < 28; i++) {
+                        const cur = new Date(today);
+                        cur.setDate(today.getDate() + i);
+                        const label = `${cur.getMonth()+1}/${cur.getDate()}(${['日','月','火','水','木','金','土'][cur.getDay()]})`;
+
+                        // Weather find
+                        let dayW = null;
+                        if (uiState.value.weather) {
+                            dayW = uiState.value.weather.dailyForecast.find(d => {
+                                const dObj = new Date(d.date);
+                                return dObj.getFullYear() === cur.getFullYear() && dObj.getMonth() === cur.getMonth() && dObj.getDate() === cur.getDate();
+                            });
+                        }
+
+                        // All Day events
+                        const start = cur.getTime();
+                        const end = start + 86400000;
+                        const allDay = (uiState.value.calendarEvents || []).filter(e => e.start < end && e.end > start && e.allDay);
+
+                        results.push({ label, weather: dayW, allDayEvents: allDay, dateObj: cur });
+                    }
+                    return results;
+                });
+
+                const nowY = computed(() => {
+                    const now = new Date();
+                    return (now.getHours() * 60 + now.getMinutes()) * (hourHeight / 60);
+                });
+
+                // Receiver logic
+                const context = cast.framework.CastReceiverContext.getInstance();
+                const playerManager = context.getPlayerManager();
+
+                context.addCustomMessageListener('urn:x-cast:jp.kyogg.weatherinfo', (event) => {
+                    uiState.value = event.data;
+                });
+
+                const options = new cast.framework.CastReceiverOptions();
+                options.maxInactivity = 3600; // Keep alive
+                context.start(options);
+
+                // Simulation / Sync scroll
+                const updateSync = () => {
+                    const now = new Date();
+                    // Sync target scroll (similar to Android logic: now - 2 hours)
+                    const targetY = Math.max(0, (now.getHours() + now.getMinutes()/60 - 2) * hourHeight);
+                    scrollY.value = targetY;
+
+                    // Header slide logic
+                    const dayOffset = Math.floor(targetY / (hourHeight * 24));
+                    verticalDayOffset.value = dayOffset;
+                    headerX.value = dayOffset * laneWidth;
+                };
+
+                onMounted(() => {
+                    setInterval(updateSync, 10000);
+                    setInterval(() => { showingRadar.value = !showingRadar.value; }, 10000);
+                    updateSync();
+                });
+
+                watch(() => uiState.value.weather, (newWeather) => {
+                    if (newWeather) updateChart(newWeather.hourlyForecast);
+                });
+
+                const updateChart = (hourly) => {
+                    const ctx = document.getElementById('pressureChart').getContext('2d');
+                    const data = hourly.slice(0, 48);
+                    if (chart) chart.destroy();
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(h => h.time),
+                            datasets: [{
+                                label: 'hPa',
+                                data: data.map(h => h.pressure),
+                                borderColor: '#00BFFF',
+                                borderWidth: 3,
+                                pointRadius: 0,
+                                tension: 0.3,
+                                fill: false
+                            }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {
+                                y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#888' } },
+                                x: { grid: { display: false }, ticks: { color: '#888', maxTicksLimit: 8 } }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                };
+
+                const getPlacedEvents = (laneDayOffset) => {
+                    if (!uiState.value.calendarEvents) return [];
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const laneDate = new Date(today);
+                    laneDate.setDate(today.getDate() + laneDayOffset);
+                    const laneStart = laneDate.getTime();
+
+                    const results = [];
+                    // Process 14 days in this lane
+                    for (let vDay = 0; vDay < 14; vDay++) {
+                        const dayStart = laneStart + (vDay * 86400000);
+                        const dayEnd = dayStart + 86400000;
+                        const dayEv = uiState.value.calendarEvents.filter(e => e.start < dayEnd && e.end > dayStart && !e.allDay);
+
+                        // Collision logic
+                        const columns = [];
+                        dayEv.sort((a,b) => a.start - b.start).forEach(ev => {
+                            let colIdx = -1;
+                            for (let i=0; i<columns.length; i++) { if(columns[i] <= ev.start) { colIdx = i; columns[i] = ev.end; break; } }
+                            if (colIdx === -1) { colIdx = columns.length; columns.push(ev.end); }
+
+                            const sD = (ev.start - dayStart) / 3600000;
+                            const eD = (ev.end - dayStart) / 3600000;
+                            results.push({
+                                title: ev.title,
+                                color: ev.color,
+                                location: ev.location,
+                                y: (vDay * 24 + sD) * hourHeight,
+                                h: Math.max(0.5, eD - sD) * hourHeight,
+                                col: colIdx,
+                                total: columns.length,
+                                timeStr: new Date(ev.start).getHours() + ':' + String(new Date(ev.start).getMinutes()).padStart(2,'0')
+                            });
+                        });
+                        // Update totals for this day's events
+                        const dayCount = dayEv.length;
+                        for (let i = results.length - dayCount; i < results.length; i++) {
+                            if (results[i]) results[i].total = Math.max(1, columns.length);
+                        }
+                    }
+                    return results;
+                };
+
+                return {
+                    uiState, showingRadar, scrollY, headerX, verticalDayOffset, days, nowY,
+                    getWeatherEmoji: (c, isNight) => {
+                        if (c === 'Clear') return isNight ? '🌙' : '☀️';
+                        return {'Clear':'☀️','Clouds':'☁️','Rain':'☔','Snow':'❄️'}[c] || '❓';
+                    },
+                    formatTitle: (t) => t.length > 15 ? t.substring(0,12) + '...' : t,
+                    getPlacedEvents
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
