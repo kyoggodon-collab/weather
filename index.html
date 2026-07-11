@@ -483,7 +483,7 @@
         .graph-panel.mode-event .graph-view-events::before {
             content: '';
             position: absolute;
-            left: calc(-1 * var(--u) * 0.65 - var(--u) * 0.28);
+            left: calc(-1 * var(--u) * 0.55 - var(--u) * 0.14);
             top: calc(-1 * var(--u) * 0.55);
             bottom: calc(-1 * var(--u) * 0.55);
             width: calc(var(--u) * 0.28);
@@ -1141,18 +1141,21 @@
             const inWindow = timed.filter(({ start }) => nowMs >= start - PRE_START_MS && nowMs < start);
             if (inWindow.length === 0) return null;
 
-            const startMs = inWindow[0].start;
-            return {
-                start: startMs,
-                items: inWindow.filter(({ start }) => start === startMs),
-            };
+            return { items: inWindow };
         }
 
         function getSpotlightCardIndex(group, nowMs) {
             if (group.items.length <= 1) return 0;
-            const windowStart = group.start - PRE_START_MS;
-            const elapsed = Math.max(0, nowMs - windowStart);
-            return Math.floor(elapsed / SPOTLIGHT_ROTATE_MS) % group.items.length;
+            const allSameStart = group.items.every(({ start }) => start === group.items[0].start);
+            if (allSameStart) {
+                const windowStart = group.items[0].start - PRE_START_MS;
+                const elapsed = Math.max(0, nowMs - windowStart);
+                return Math.floor(elapsed / SPOTLIGHT_ROTATE_MS) % group.items.length;
+            }
+            const slotMs = SPOTLIGHT_ROTATE_MS;
+            const earliestWindowStart = Math.min(...group.items.map(({ start }) => start - PRE_START_MS));
+            const elapsed = Math.max(0, nowMs - earliestWindowStart);
+            return Math.floor(elapsed / slotMs) % group.items.length;
         }
 
         function formatSpotlightCountdown(nowMs, startMs) {
@@ -1274,7 +1277,7 @@
             graphPanel.classList.toggle('mode-event', showEvent);
 
             const groupKey = group
-                ? `${group.start}:${group.items.map(({ event }) => event.id).join(',')}`
+                ? group.items.map(({ event, start }) => `${event.id}:${start}`).join(',')
                 : '';
 
             if (!showEvent) {
@@ -1303,12 +1306,18 @@
                 lastSpotlightActiveIndex = activeIndex;
             }
 
-            const minuteKey = `${group.start}:${Math.max(0, Math.ceil((group.start - nowMs) / 60000))}`;
+            const minuteKey = group.items.map(({ event, start }) => (
+                `${event.id}:${Math.max(0, Math.ceil((start - nowMs) / 60000))}`
+            )).join('|');
             if (minuteKey !== lastSpotlightMinuteKey) {
                 lastSpotlightMinuteKey = minuteKey;
-                const countdown = formatSpotlightCountdown(nowMs, group.start);
-                cardsRoot.querySelectorAll('.event-card-countdown').forEach((node) => {
-                    node.textContent = countdown;
+                cardsRoot.querySelectorAll('.event-card').forEach((node, index) => {
+                    const spotlight = group.items[index];
+                    if (!spotlight) return;
+                    const countdownNode = node.querySelector('.event-card-countdown');
+                    if (countdownNode) {
+                        countdownNode.textContent = formatSpotlightCountdown(nowMs, spotlight.start);
+                    }
                 });
             }
         }
