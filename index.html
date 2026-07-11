@@ -487,8 +487,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: calc(var(--u) * 0.55);
-            padding: calc(var(--u) * 0.85) calc(var(--u) * 1.0);
+            gap: calc(var(--u) * 0.38);
+            padding: calc(var(--u) * 0.65) calc(var(--u) * 0.85);
             border-left: calc(var(--u) * 0.42) solid var(--event-accent, var(--accent));
             background-color: #0a1018;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
@@ -535,33 +535,68 @@
 
         .event-card-label {
             color: var(--accent);
-            font-size: calc(var(--u) * 1.2);
+            font-size: calc(var(--u) * 1.05);
             font-weight: 600;
             letter-spacing: 0.08em;
         }
 
-        .event-card-countdown {
-            color: var(--warn);
-            font-size: calc(var(--u) * 2.8);
-            font-weight: 600;
-            line-height: 1.05;
+        .event-card-title {
+            color: var(--text);
+            font-size: calc(var(--u) * 2.0);
+            font-weight: 700;
+            line-height: 1.14;
+            word-break: break-word;
+        }
+
+        .event-card-schedule {
+            min-width: 0;
+        }
+
+        .event-card-time-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: calc(var(--u) * 0.15) calc(var(--u) * 0.38);
+            font-size: calc(var(--u) * 1.22);
+            line-height: 1.3;
+        }
+
+        .event-card-time-label {
+            color: var(--dim);
+            font-size: calc(var(--u) * 0.98);
+            white-space: nowrap;
+        }
+
+        .event-card-time-value {
+            color: var(--text);
             font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .event-card-countdown {
+            margin-left: auto;
+            color: var(--warn);
+            font-size: calc(var(--u) * 1.28);
+            font-weight: 600;
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
         }
 
         .event-card-meta {
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.28);
+            gap: calc(var(--u) * 0.22);
             min-height: 0;
         }
 
         .event-card-meta-row {
             display: grid;
-            grid-template-columns: calc(var(--u) * 3.2) minmax(0, 1fr);
-            gap: calc(var(--u) * 0.35);
+            grid-template-columns: calc(var(--u) * 3.0) minmax(0, 1fr);
+            gap: calc(var(--u) * 0.3);
             align-items: baseline;
-            font-size: calc(var(--u) * 1.28);
-            line-height: 1.35;
+            font-size: calc(var(--u) * 1.15);
+            line-height: 1.3;
         }
 
         .event-card-meta-label {
@@ -573,14 +608,6 @@
         .event-card-meta-value {
             color: var(--text);
             font-variant-numeric: tabular-nums;
-            word-break: break-word;
-        }
-
-        .event-card-title {
-            color: var(--text);
-            font-size: calc(var(--u) * 2.4);
-            font-weight: 700;
-            line-height: 1.16;
             word-break: break-word;
         }
 
@@ -1080,8 +1107,7 @@
         let lastSpotlightActiveIndex = -1;
         let lastSpotlightMinuteKey = '';
         const PRE_START_MS = 10 * 60 * 1000;
-        const SPOTLIGHT_ON_MS = 20 * 1000;
-        const SPOTLIGHT_CYCLE_MS = 60 * 1000;
+        const SPOTLIGHT_ROTATE_MS = 20 * 1000;
         const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
 
         function findSpotlightGroup(events, nowMs) {
@@ -1105,19 +1131,11 @@
             };
         }
 
-        function isSpotlightPhase(nowMs, eventStartMs) {
-            const windowStart = eventStartMs - PRE_START_MS;
-            if (nowMs < windowStart || nowMs >= eventStartMs) return false;
-            const elapsed = nowMs - windowStart;
-            return (elapsed % SPOTLIGHT_CYCLE_MS) < SPOTLIGHT_ON_MS;
-        }
-
         function getSpotlightCardIndex(group, nowMs) {
+            if (group.items.length <= 1) return 0;
             const windowStart = group.start - PRE_START_MS;
-            const phaseElapsed = (nowMs - windowStart) % SPOTLIGHT_CYCLE_MS;
-            const count = group.items.length;
-            const slotMs = SPOTLIGHT_ON_MS / count;
-            return Math.min(count - 1, Math.floor(phaseElapsed / slotMs));
+            const elapsed = Math.max(0, nowMs - windowStart);
+            return Math.floor(elapsed / SPOTLIGHT_ROTATE_MS) % group.items.length;
         }
 
         function formatSpotlightCountdown(nowMs, startMs) {
@@ -1128,12 +1146,6 @@
 
         function buildEventMetaHtml(event, start, end) {
             const rows = [];
-            const startLabel = formatClockFromMs(start);
-            const endLabel = formatClockFromMs(end);
-
-            if (startLabel) rows.push({ label: '開始', value: startLabel });
-            if (endLabel) rows.push({ label: '終了', value: endLabel });
-
             const durationMin = Math.max(0, Math.round((end - start) / 60000));
             if (durationMin > 0) {
                 rows.push({ label: '所要', value: `${durationMin}分` });
@@ -1159,6 +1171,33 @@
             `;
         }
 
+        function buildEventScheduleHtml(start, end, nowMs) {
+            const startLabel = formatClockFromMs(start);
+            const endLabel = formatClockFromMs(end);
+            const countdown = formatSpotlightCountdown(nowMs, start);
+            const parts = [];
+
+            if (startLabel) {
+                parts.push(
+                    '<span class="event-card-time-label">開始</span>',
+                    `<span class="event-card-time-value">${escapeHtml(startLabel)}</span>`,
+                );
+            }
+            if (endLabel) {
+                parts.push(
+                    '<span class="event-card-time-label">終了</span>',
+                    `<span class="event-card-time-value">${escapeHtml(endLabel)}</span>`,
+                );
+            }
+            parts.push(`<span class="event-card-countdown">${escapeHtml(countdown)}</span>`);
+
+            return `
+                <div class="event-card-schedule">
+                    <div class="event-card-time-row">${parts.join('')}</div>
+                </div>
+            `;
+        }
+
         function buildEventStepsHtml(index, total) {
             if (total <= 1) return '';
             return `
@@ -1176,8 +1215,8 @@
             return `
                 ${buildEventStepsHtml(index, total)}
                 <div class="event-card-label">まもなく開始</div>
-                <div class="event-card-countdown">${escapeHtml(formatSpotlightCountdown(nowMs, start))}</div>
                 <div class="event-card-title">${title}</div>
+                ${buildEventScheduleHtml(start, end, nowMs)}
                 ${buildEventMetaHtml(event, start, end)}
             `;
         }
@@ -1221,9 +1260,10 @@
             const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
             const group = findSpotlightGroup(events, nowMs);
             if (!group) return CAST.spotlightIdleMs;
-            if (!isSpotlightPhase(nowMs, group.start)) return CAST.spotlightWatchMs;
-            const slotMs = SPOTLIGHT_ON_MS / group.items.length;
-            return Math.max(400, Math.min(CAST.spotlightActiveMs, Math.floor(slotMs / 2)));
+            if (group.items.length > 1) {
+                return Math.max(400, Math.floor(SPOTLIGHT_ROTATE_MS / 2));
+            }
+            return CAST.spotlightWatchMs;
         }
 
         function updateEventSpotlight() {
@@ -1234,16 +1274,16 @@
             const nowMs = Date.now();
             const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
             const group = findSpotlightGroup(events, nowMs);
-            const inPhase = group ? isSpotlightPhase(nowMs, group.start) : false;
-            const activeIndex = inPhase && group ? getSpotlightCardIndex(group, nowMs) : -1;
+            const showEvent = !!group;
+            const activeIndex = group ? getSpotlightCardIndex(group, nowMs) : -1;
 
-            graphPanel.classList.toggle('mode-event', inPhase);
+            graphPanel.classList.toggle('mode-event', showEvent);
 
             const groupKey = group
                 ? `${group.start}:${group.items.map(({ event }) => event.id).join(',')}`
                 : '';
 
-            if (!inPhase) {
+            if (!showEvent) {
                 if (lastSpotlightGroupKey) {
                     cardsRoot.innerHTML = '';
                     lastSpotlightGroupKey = '';
