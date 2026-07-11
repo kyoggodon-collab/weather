@@ -161,35 +161,28 @@
             padding: calc(var(--u) * 0.95) calc(var(--u) * 0.85);
         }
 
-        .time-row {
-            display: flex;
+        .clock-display {
+            display: inline-flex;
             align-items: baseline;
             justify-content: center;
-            gap: calc(var(--u) * 0.75);
-            width: 100%;
             line-height: 1;
             white-space: nowrap;
+            font-size: calc(var(--u) * 8.8);
+            font-variant-numeric: tabular-nums;
         }
 
         .time {
-            flex: 0 0 auto;
-            min-width: 5.5ch;
-            font-size: calc(var(--u) * 9.2);
+            font-size: 1em;
             font-weight: 100;
-            letter-spacing: 0.02em;
-            font-variant-numeric: tabular-nums;
-            text-align: right;
+            letter-spacing: 0.01em;
         }
 
         .seconds {
-            flex: 0 0 auto;
-            min-width: 2.6ch;
+            margin-left: 0.2em;
             color: var(--muted);
-            font-size: calc(var(--u) * 3.4);
+            font-size: 0.36em;
             font-weight: 200;
-            letter-spacing: 0.04em;
-            font-variant-numeric: tabular-nums;
-            text-align: left;
+            letter-spacing: 0.03em;
         }
 
         .date {
@@ -200,22 +193,21 @@
             font-variant-numeric: tabular-nums;
         }
 
-        html[data-layout="nest-hub"] .time {
-            font-size: calc(var(--u) * 7.8);
-        }
-
-        html[data-layout="nest-hub"] .seconds {
-            font-size: calc(var(--u) * 2.8);
+        html[data-layout="nest-hub"] .clock-display {
+            font-size: calc(var(--u) * 7.4);
         }
 
         .weather-panel {
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.35);
+            align-items: center;
+            text-align: center;
+            gap: calc(var(--u) * 0.45);
             padding: calc(var(--u) * 0.85) calc(var(--u) * 0.95);
         }
 
         .place {
+            width: 100%;
             color: var(--muted);
             font-size: calc(var(--u) * 1.2);
             overflow: hidden;
@@ -224,23 +216,42 @@
         }
 
         .current-weather {
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: calc(var(--u) * 0.55);
+            display: flex;
             align-items: center;
+            justify-content: center;
+            gap: calc(var(--u) * 0.55);
             min-width: 0;
+            max-width: 100%;
         }
 
         .weather-icon {
+            flex: 0 0 auto;
             font-size: calc(var(--u) * 4.8);
             line-height: 1;
+        }
+
+        .weather-main {
+            flex: 0 1 auto;
+            min-width: 0;
+            text-align: center;
+        }
+
+        .condition {
+            margin-top: calc(var(--u) * 0.12);
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.15);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
         }
 
         .temp {
             font-size: calc(var(--u) * 5.4);
             font-weight: 500;
             line-height: 0.95;
-            letter-spacing: -0.04em;
+            letter-spacing: 0;
+            font-variant-numeric: tabular-nums;
         }
 
         html[data-layout="nest-hub"] .weather-icon {
@@ -251,22 +262,16 @@
             font-size: calc(var(--u) * 4.6);
         }
 
-        .condition {
-            margin-top: calc(var(--u) * 0.12);
-            color: var(--muted);
-            font-size: calc(var(--u) * 1.15);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
         .temp-range {
-            display: flex;
+            display: inline-flex;
             align-items: baseline;
-            gap: calc(var(--u) * 0.35);
-            padding: calc(var(--u) * 0.35) calc(var(--u) * 0.55);
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: calc(var(--u) * 0.35) calc(var(--u) * 0.5);
+            padding: calc(var(--u) * 0.35) calc(var(--u) * 0.75);
             border-radius: calc(var(--u) * 0.75);
             background: var(--panel-strong);
+            max-width: 100%;
         }
 
         .temp-high {
@@ -294,11 +299,11 @@
         }
 
         .pop-badge {
-            margin-left: auto;
             color: var(--pop-color);
             font-size: calc(var(--u) * 1.25);
             font-weight: 500;
             white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
 
         .radar-panel {
@@ -831,7 +836,7 @@
     <main id="app" aria-label="Weather receiver">
         <section class="column left">
             <section class="panel clock-panel">
-                <div class="time-row">
+                <div class="clock-display">
                     <div id="time" class="time">--:--</div>
                     <div id="seconds" class="seconds">--</div>
                 </div>
@@ -842,7 +847,7 @@
                 <div id="place" class="place">Weather Info</div>
                 <div class="current-weather">
                     <div id="currentIcon" class="weather-icon">--</div>
-                    <div>
+                    <div class="weather-main">
                         <div id="currentTemp" class="temp">--℃</div>
                         <div id="condition" class="condition">スマホからのデータを待っています</div>
                     </div>
