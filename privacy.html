@@ -3,282 +3,2244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>プライバシーポリシー | Tablet Signage JP</title>
+    <title>Weather Info Receiver</title>
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
     <style>
         :root {
-            color-scheme: light dark;
-            --text: #1a1a1a;
-            --muted: #555;
-            --bg: #fafafa;
-            --card: #fff;
-            --border: #e0e0e0;
-            --link: #1565c0;
+            color-scheme: dark;
+            --bg: #05070b;
+            --panel: rgba(255, 255, 255, 0.075);
+            --panel-strong: rgba(255, 255, 255, 0.11);
+            --border: rgba(255, 255, 255, 0.14);
+            --text: #f5f7fb;
+            --muted: #aab2c0;
+            --dim: #687080;
+            --accent: #62c8ff;
+            --warn: #ffd166;
+            --temp-high: #ff6b4a;
+            --temp-low: #5eb3ff;
+            --pop-color: #87ceeb;
+            /* FHD(1920x1080)基準。Nest Hub は JS で data-layout を切り替え */
+            --u: calc(min(100vw / 128, 100vh / 72) * 1.15);
+            --safe-x: calc(var(--u) * 1.6);
+            --safe-y: calc(var(--u) * 1.4);
+            --gap: calc(var(--u) * 1.1);
+            --radius: calc(var(--u) * 1.5);
         }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --text: #ececec;
-                --muted: #aaa;
-                --bg: #121212;
-                --card: #1e1e1e;
-                --border: #333;
-                --link: #64b5f6;
-            }
+
+        html[data-layout="nest-hub"] {
+            --u: calc(min(100vw / 128, 100vh / 80) * 1.12);
+            --safe-x: calc(var(--u) * 1.2);
+            --safe-y: calc(var(--u) * 1.0);
+            --gap: calc(var(--u) * 0.85);
+            --radius: calc(var(--u) * 1.2);
         }
+
+        html[data-layout="fhd"] {
+            --u: calc(min(100vw / 128, 100vh / 72) * 1.15);
+        }
+
+        html.cast-receiver .panel {
+            contain: layout style paint;
+        }
+
+        html.cast-receiver .event-card {
+            backface-visibility: hidden;
+        }
+
+        html.cast-receiver .graph-panel {
+            contain: layout style;
+        }
+
+        html.cast-receiver .graph-body {
+            contain: layout style paint;
+        }
+
         * { box-sizing: border-box; }
+
+        html,
         body {
-            margin: 0;
-            font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-            line-height: 1.75;
-            color: var(--text);
-            background: var(--bg);
-        }
-        main {
-            max-width: 720px;
-            margin: 0 auto;
-            padding: 2rem 1.25rem 4rem;
-        }
-        h1 {
-            font-size: 1.6rem;
-            margin: 0 0 0.5rem;
-            line-height: 1.35;
-        }
-        .meta {
-            color: var(--muted);
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-        }
-        h2 {
-            font-size: 1.15rem;
-            margin: 2rem 0 0.75rem;
-            padding-bottom: 0.35rem;
-            border-bottom: 1px solid var(--border);
-        }
-        p, li { font-size: 0.95rem; }
-        ul { padding-left: 1.25rem; }
-        li { margin: 0.35rem 0; }
-        a { color: var(--link); }
-        table {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-            margin: 1rem 0;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 20% 0%, rgba(45, 120, 190, 0.26), transparent 34%),
+                radial-gradient(circle at 95% 15%, rgba(70, 160, 220, 0.14), transparent 30%),
+                var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
-        th, td {
-            border: 1px solid var(--border);
-            padding: 0.55rem 0.65rem;
-            text-align: left;
-            vertical-align: top;
+
+        body {
+            /* TV / Nest Hub のオーバースキャン対策 */
+            padding: var(--safe-y) var(--safe-x);
         }
-        th { background: var(--card); }
-        .note {
-            background: var(--card);
+
+        #app {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 0.88fr 2.12fr;
+            gap: var(--gap);
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .column,
+        .main-area {
+            display: grid;
+            gap: var(--gap);
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .left { grid-template-rows: auto auto 1fr; }
+        .main-area { grid-template-rows: calc(var(--u) * 15.5) 1fr auto; }
+        .top-row {
+            display: grid;
+            grid-template-columns: 1.02fr 0.98fr;
+            gap: var(--gap);
+            min-width: 0;
+            min-height: 0;
+        }
+
+        /* リスト形式は使わない。常に週間カレンダーを表示 */
+        .schedule-panel { display: none !important; }
+        .week-panel { display: flex; }
+
+        .panel {
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem 1.1rem;
-            font-size: 0.9rem;
+            border-radius: var(--radius);
+            background: var(--panel);
+            box-shadow: 0 calc(var(--u) * 1.2) calc(var(--u) * 2.8) rgba(0, 0, 0, 0.22);
+        }
+
+        .clock-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: calc(var(--u) * 0.95) calc(var(--u) * 0.85);
+        }
+
+        .clock-display {
+            position: relative;
+            display: inline-block;
+            line-height: 1;
+            white-space: nowrap;
+            font-size: calc(var(--u) * 8.8);
+            font-variant-numeric: tabular-nums;
+            contain: layout style;
+        }
+
+        .time {
+            font-size: 1em;
+            font-weight: 100;
+            letter-spacing: 0.01em;
+        }
+
+        .seconds {
+            position: absolute;
+            left: calc(100% + 0.22em);
+            bottom: 0.14em;
             color: var(--muted);
+            font-size: 0.36em;
+            font-weight: 200;
+            letter-spacing: 0.03em;
+        }
+
+        .date {
+            margin-top: calc(var(--u) * 0.55);
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.75);
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        html[data-layout="nest-hub"] .clock-display {
+            font-size: calc(var(--u) * 7.4);
+        }
+
+        .weather-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: calc(var(--u) * 0.45);
+            padding: calc(var(--u) * 0.85) calc(var(--u) * 0.95);
+        }
+
+        .place {
+            width: 100%;
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.2);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .current-weather {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--u) * 0.55);
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .weather-icon {
+            flex: 0 0 auto;
+            font-size: calc(var(--u) * 4.8);
+            line-height: 1;
+        }
+
+        .weather-main {
+            flex: 0 1 auto;
+            min-width: 0;
+            text-align: center;
+        }
+
+        .temp {
+            font-size: calc(var(--u) * 5.4);
+            font-weight: 500;
+            line-height: 0.95;
+            letter-spacing: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        html[data-layout="nest-hub"] .weather-icon {
+            font-size: calc(var(--u) * 4.2);
+        }
+
+        html[data-layout="nest-hub"] .temp {
+            font-size: calc(var(--u) * 4.6);
+        }
+
+        .temp-range {
+            display: inline-flex;
+            align-items: baseline;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: calc(var(--u) * 0.35) calc(var(--u) * 0.5);
+            padding: calc(var(--u) * 0.35) calc(var(--u) * 0.75);
+            border-radius: calc(var(--u) * 0.75);
+            background: var(--panel-strong);
+            max-width: 100%;
+        }
+
+        .temp-high {
+            color: var(--temp-high);
+            font-size: calc(var(--u) * 1.65);
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .temp-low {
+            color: var(--temp-low);
+            font-size: calc(var(--u) * 1.65);
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .temp-sep {
+            color: var(--dim);
+            font-size: calc(var(--u) * 1.2);
+        }
+
+        .temp-unit {
+            font-size: calc(var(--u) * 1.0);
+            opacity: 0.85;
+        }
+
+        .pop-badge {
+            color: var(--pop-color);
+            font-size: calc(var(--u) * 1.25);
+            font-weight: 500;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .radar-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: calc(var(--u) * 0.45);
+        }
+
+        .radar-body {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            border-radius: calc(var(--u) * 0.75);
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        #radarCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .radar-time {
+            position: absolute;
+            right: calc(var(--u) * 0.35);
+            bottom: calc(var(--u) * 0.28);
+            color: rgba(255, 255, 255, 0.78);
+            font-size: calc(var(--u) * 0.68);
+            line-height: 1;
+            pointer-events: none;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
+        }
+
+        .hourly-panel,
+        .graph-panel,
+        .daily-panel,
+        .schedule-panel,
+        .week-panel {
+            padding: calc(var(--u) * 0.55) calc(var(--u) * 0.65);
+        }
+
+        .hourly-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .hourly-panel-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.28);
+        }
+
+        .hourly-grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: calc(var(--u) * 0.28);
+            height: calc(var(--u) * 5.8);
+            flex-shrink: 0;
+        }
+
+        .daily-week-grid {
+            flex: 1;
+            min-height: calc(var(--u) * 6.2);
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: calc(var(--u) * 0.24);
+            align-content: stretch;
+        }
+
+
+        .daily-week-cell {
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--u) * 0.14);
+            padding: calc(var(--u) * 0.2) calc(var(--u) * 0.08);
+            border-radius: calc(var(--u) * 0.45);
+            background: rgba(255, 255, 255, 0.045);
+        }
+
+        .daily-week-cell.today {
+            background: rgba(98, 200, 255, 0.1);
+        }
+
+        .daily-week-dow {
+            color: var(--text);
+            font-size: calc(var(--u) * 0.9);
+            font-weight: 600;
+            line-height: 1;
+            letter-spacing: 0.04em;
+        }
+
+        .daily-week-cell.today .daily-week-dow {
+            color: var(--accent);
+        }
+
+        .daily-week-icon {
+            font-size: calc(var(--u) * 1.45);
+            line-height: 1;
+        }
+
+        .daily-week-temps {
+            display: flex;
+            gap: 0.12em;
+            font-size: calc(var(--u) * 0.88);
+            font-weight: 400;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .daily-week-temp-max {
+            color: var(--temp-high);
+        }
+
+        .daily-week-temp-min {
+            color: var(--temp-low);
+        }
+
+        .daily-week-pop {
+            color: var(--pop-color);
+            font-size: calc(var(--u) * 0.8);
+            font-weight: 500;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        html[data-layout="nest-hub"] .hourly-grid {
+            height: calc(var(--u) * 5.6);
+        }
+
+        .hour-card {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: auto auto auto auto;
+            place-items: center;
+            align-content: center;
+            gap: calc(var(--u) * 0.06);
+            padding: calc(var(--u) * 0.16) calc(var(--u) * 0.1);
+            border-radius: calc(var(--u) * 0.55);
+            background: var(--panel-strong);
+        }
+
+        .hour-time {
+            color: var(--muted);
+            font-size: calc(var(--u) * 0.88);
+        }
+
+        .hour-icon {
+            font-size: calc(var(--u) * 1.65);
+            line-height: 1;
+        }
+
+        .hour-temp {
+            font-size: calc(var(--u) * 1.05);
+            font-weight: 500;
+        }
+
+        .hour-pop {
+            color: var(--pop-color);
+            font-size: calc(var(--u) * 0.82);
+            font-weight: 500;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .graph-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            position: relative;
+        }
+
+        .graph-body {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template: 1fr / 1fr;
+            overflow: hidden;
+        }
+
+        .graph-view {
+            grid-area: 1 / 1;
+            min-width: 0;
+            min-height: 0;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+        }
+
+        .graph-view-pressure {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .graph-panel.mode-event .graph-view-pressure {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .graph-panel.mode-event .graph-view-events {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .graph-panel.mode-event {
+            z-index: 1;
+        }
+
+        .graph-view-events {
+            position: relative;
+        }
+
+        .event-accent-bar {
+            display: none;
+            position: absolute;
+            left: calc(var(--u) * 0.14);
+            top: calc(var(--u) * 0.42);
+            bottom: calc(var(--u) * 0.42);
+            width: calc(var(--u) * 0.24);
+            border-radius: 999px;
+            background: var(--event-accent, var(--accent));
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .graph-panel.mode-event .event-accent-bar {
+            display: block;
+        }
+
+        .graph-panel.mode-event .event-card {
+            padding-left: calc(var(--u) * 0.48);
+            padding-right: calc(var(--u) * 0.1);
+        }
+
+        #pressureCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .event-cards {
+            height: 100%;
+            display: grid;
+            grid-template: 1fr / 1fr;
+        }
+
+        .event-card {
+            grid-area: 1 / 1;
+            position: relative;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: calc(var(--u) * 0.38);
+            padding: calc(var(--u) * 0.35) 0;
+            background: transparent;
+            opacity: 0;
+            visibility: hidden;
+            overflow: visible;
+            transition: opacity 0.32s ease-out, visibility 0.32s ease-out;
+        }
+
+        .event-card.is-active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .event-card-label {
+            color: var(--accent);
+            font-size: calc(var(--u) * 1.05);
+            font-weight: 600;
+            letter-spacing: 0.08em;
+        }
+
+        .event-card-title {
+            color: var(--text);
+            font-size: calc(var(--u) * 2.0);
+            font-weight: 700;
+            line-height: 1.14;
+            word-break: break-word;
+        }
+
+        .event-card-schedule {
+            min-width: 0;
+        }
+
+        .event-card-time-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: calc(var(--u) * 0.55);
+            font-size: calc(var(--u) * 1.22);
+            line-height: 1.3;
+        }
+
+        .event-card-times {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: calc(var(--u) * 0.15) calc(var(--u) * 0.38);
+            min-width: 0;
+        }
+
+        .event-card-time-label {
+            color: var(--dim);
+            font-size: calc(var(--u) * 0.98);
+            white-space: nowrap;
+        }
+
+        .event-card-time-value {
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .event-card-countdown {
+            color: var(--warn);
+            font-size: calc(var(--u) * 1.28);
+            font-weight: 600;
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .event-card-meta {
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.22);
+            min-height: 0;
+        }
+
+        .event-card-meta-row {
+            display: grid;
+            grid-template-columns: calc(var(--u) * 3.0) minmax(0, 1fr);
+            gap: calc(var(--u) * 0.3);
+            align-items: baseline;
+            font-size: calc(var(--u) * 1.15);
+            line-height: 1.3;
+        }
+
+        .event-card-meta-label {
+            color: var(--dim);
+            font-size: calc(var(--u) * 1.02);
+            white-space: nowrap;
+        }
+
+        .event-card-meta-value {
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+            word-break: break-word;
+        }
+
+        .week-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .week-grid {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .week-cal {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .week-cal-head,
+        .week-cal-allday {
+            display: grid;
+            grid-template-columns: calc(var(--u) * 4.2) repeat(7, minmax(0, 1fr));
+            gap: 0;
+            min-width: 0;
+        }
+
+        .week-cal-head {
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: calc(var(--u) * 0.25);
+        }
+
+        .week-cal-corner {
+            min-width: 0;
+        }
+
+        .week-cal-day-head {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: calc(var(--u) * 0.1);
+            padding: calc(var(--u) * 0.15) calc(var(--u) * 0.2);
+            color: var(--muted);
+            font-size: calc(var(--u) * 0.92);
+            white-space: nowrap;
+        }
+
+        .week-cal-day-head.sunday { color: #ff9a8f; }
+        .week-cal-day-head.saturday { color: #8fc8ff; }
+        .week-cal-day-head.today:not(.sunday):not(.saturday) {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .week-cal-day-head.today.sunday,
+        .week-cal-day-head.today.saturday {
+            font-weight: 500;
+        }
+
+        .week-dow {
+            line-height: 1;
+        }
+
+        .week-date-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: calc(var(--u) * 2);
+            height: calc(var(--u) * 2);
+            border-radius: 999px;
+            font-size: calc(var(--u) * 1.12);
+            color: inherit;
+            line-height: 1;
+        }
+
+        .week-cal-day-head.today .week-date-num {
+            background: rgba(98, 200, 255, 0.22);
+        }
+
+        .week-cal-day-head.today.sunday .week-date-num {
+            background: rgba(255, 154, 143, 0.24);
+        }
+
+        .week-cal-day-head.today.saturday .week-date-num {
+            background: rgba(143, 200, 255, 0.24);
+        }
+
+        .week-cal-allday {
+            flex-shrink: 0;
+            min-height: calc(var(--u) * 1.6);
+            max-height: calc(var(--u) * 7.5);
+            border-bottom: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .week-cal-allday-label {
+            min-width: 0;
+        }
+
+        .week-cal-allday-col {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.12);
+            padding: calc(var(--u) * 0.12) calc(var(--u) * 0.1);
+            overflow: hidden;
+        }
+
+        .week-cal-allday-event {
+            min-width: 0;
+            border-radius: calc(var(--u) * 0.35);
+            padding: calc(var(--u) * 0.16) calc(var(--u) * 0.32);
+            font-size: calc(var(--u) * 0.8);
+            line-height: 1.25;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.12);
+            border-left: calc(var(--u) * 0.18) solid var(--accent);
+        }
+
+        .week-cal-body {
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: calc(var(--u) * 4.2) minmax(0, 1fr);
+            overflow: hidden;
+        }
+
+        .week-cal-times {
+            position: relative;
+            min-width: 0;
+            height: 100%;
+            padding: calc(var(--u) * 0.55) 0;
+            box-sizing: border-box;
+        }
+
+        .week-cal-time {
+            position: absolute;
+            left: 0;
+            right: calc(var(--u) * 0.15);
+            transform: translateY(-50%);
+            text-align: right;
+            color: var(--dim);
+            font-size: calc(var(--u) * 0.68);
+            line-height: 1;
+        }
+
+        .week-cal-columns {
+            position: relative;
+            min-width: 0;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            border-left: 1px solid var(--border);
+        }
+
+        .week-cal-col {
+            position: relative;
+            min-width: 0;
+            height: 100%;
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .week-cal-col-lines {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .week-cal-hour-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-50%);
+        }
+
+        .week-cal-col.today {
+            background: rgba(98, 200, 255, 0.04);
+        }
+
+        .week-cal-event {
+            position: absolute;
+            box-sizing: border-box;
+            border-radius: calc(var(--u) * 0.32);
+            padding: calc(var(--u) * 0.14) calc(var(--u) * 0.26);
+            overflow: hidden;
+            color: #fff;
+            font-size: calc(var(--u) * 0.74);
+            line-height: 1.22;
+            border-left: calc(var(--u) * 0.16) solid var(--accent);
+            background: rgba(98, 200, 255, 0.28);
+            z-index: 1;
+        }
+
+        .week-cal-event-time {
+            font-size: calc(var(--u) * 0.66);
+            opacity: 0.92;
+            margin-bottom: calc(var(--u) * 0.05);
+            white-space: nowrap;
+        }
+
+        .week-cal-event-title {
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 4;
+            word-break: break-word;
+        }
+
+        .week-cal-event.short .week-cal-event-time {
+            display: none;
+        }
+
+        .week-cal-event.short .week-cal-event-title {
+            -webkit-line-clamp: 2;
+            font-size: calc(var(--u) * 0.68);
+        }
+
+        /* Nest Hub では week-panel 自体を非表示のため以下は未使用 */
+        html[data-layout="nest-hub"] .week-grid {
+            gap: calc(var(--u) * 0.26);
+        }
+
+        .daily-list {
+            height: calc(100% - 3.2vh);
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75vw;
+            min-height: 0;
+        }
+
+        .daily-card {
+            min-width: 0;
+            min-height: 0;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.7vw;
+            align-items: center;
+            padding: 1vh 0.85vw;
+            border-radius: 16px;
+            background: var(--panel-strong);
+        }
+
+        .daily-icon {
+            font-size: clamp(24px, 2.3vw, 44px);
+            line-height: 1;
+        }
+
+        .daily-date,
+        .daily-temp {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .daily-date {
+            color: var(--muted);
+            font-size: clamp(12px, 0.95vw, 18px);
+        }
+
+        .daily-temp {
+            margin-top: 0.25vh;
+            font-size: clamp(15px, 1.15vw, 22px);
+            font-weight: 500;
+        }
+
+        .credits {
+            align-self: end;
+            color: var(--dim);
+            font-size: calc(var(--u) * 0.85);
+            line-height: 1.45;
+            text-align: right;
+            padding-top: calc(var(--u) * 0.2);
+        }
+
+        .schedule-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .event-list {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.75);
+            overflow: hidden;
+        }
+
+        .event-list .event-card {
+            flex: 0 0 auto;
+            min-height: 0;
+            border-left: calc(var(--u) * 0.38) solid var(--accent);
+            border-radius: calc(var(--u) * 0.95);
+            background: var(--panel-strong);
+            padding: calc(var(--u) * 0.75) calc(var(--u) * 0.85);
+        }
+
+        .event-title {
+            color: var(--text);
+            font-size: calc(var(--u) * 1.45);
+            font-weight: 500;
+            line-height: 1.32;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .event-time {
+            margin-top: calc(var(--u) * 0.32);
+            color: var(--warn);
+            font-size: calc(var(--u) * 1.12);
+            line-height: 1.25;
+            white-space: nowrap;
+        }
+
+        .event-location {
+            margin-top: calc(var(--u) * 0.22);
+            color: var(--muted);
+            font-size: calc(var(--u) * 1.0);
+            line-height: 1.25;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        html[data-layout="nest-hub"] .event-title {
+            font-size: calc(var(--u) * 1.32);
+        }
+
+        html[data-layout="nest-hub"] .event-list {
+            gap: calc(var(--u) * 0.68);
+        }
+
+        html[data-layout="nest-hub"] .event-location {
+            display: none;
+        }
+
+        .empty {
+            height: 100%;
+            display: grid;
+            place-items: center;
+            color: var(--dim);
+            font-size: calc(var(--u) * 1.45);
+            text-align: center;
         }
     </style>
 </head>
 <body>
-<main>
-    <h1>プライバシーポリシー</h1>
-    <p class="meta">
-        アプリ名: Tablet Signage JP（パッケージ名: jp.kyogg.weatherinfo）<br>
-        制定日: 2026年7月12日<br>
-        最終更新日: 2026年7月12日
-    </p>
+    <main id="app" aria-label="Weather receiver">
+        <section class="column left">
+            <section class="panel clock-panel">
+                <div class="clock-display">
+                    <div id="time" class="time">--:--</div>
+                    <div id="seconds" class="seconds">--</div>
+                </div>
+                <div id="date" class="date">データ待機中</div>
+            </section>
 
-    <p>
-        本プライバシーポリシー（以下「本ポリシー」）は、kyogg（以下「当方」）が提供する Android アプリケーション
-        「Tablet Signage JP」（以下「本アプリ」）における、利用者情報の取り扱いについて定めるものです。
-    </p>
+            <section class="panel weather-panel">
+                <div id="place" class="place">Weather Info</div>
+                <div class="current-weather">
+                    <div id="currentIcon" class="weather-icon">--</div>
+                    <div class="weather-main">
+                        <div id="currentTemp" class="temp">--℃</div>
+                    </div>
+                </div>
+                <div class="temp-range">
+                    <span id="tempMax" class="temp-high">--<span class="temp-unit">℃</span></span>
+                    <span class="temp-sep">/</span>
+                    <span id="tempMin" class="temp-low">--<span class="temp-unit">℃</span></span>
+                    <span id="pop" class="pop-badge">降水 --%</span>
+                </div>
+            </section>
 
-    <h2>1. 基本方針</h2>
-    <p>
-        本アプリは、タブレット等の大画面端末向けに天気・カレンダー・雨量レーダー等を表示するダッシュボードアプリです。
-        当方は、本アプリの提供に必要な範囲に限り情報を取り扱い、利用者のプライバシー保護に努めます。
-    </p>
-    <p>
-        当方は、本アプリを通じて利用者の個人情報を販売したり、広告配信のために第三者へ提供したりすることはありません。
-        また、本アプリ内にユーザー登録機能や、当方が運用する独自のサーバーへの個人データ送信機能はありません。
-    </p>
+            <section class="panel radar-panel">
+                <div class="radar-body">
+                    <canvas id="radarCanvas"></canvas>
+                    <div id="radarTime" class="radar-time"></div>
+                </div>
+            </section>
+        </section>
 
-    <h2>2. 当方が取得・利用する情報</h2>
-    <p>本アプリは、以下の情報を端末内で取得し、表示および外部サービスへの天気取得等に利用します。</p>
+        <section class="main-area">
+            <div class="top-row">
+                <section class="panel hourly-panel">
+                    <div class="hourly-panel-body">
+                        <div id="hourlyGrid" class="hourly-grid"></div>
+                        <div id="dailyWeekGrid" class="daily-week-grid"></div>
+                    </div>
+                </section>
 
-    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem;">2.1 位置情報</h3>
-    <ul>
-        <li>GPS 等による現在地（位置情報の利用許可を付与した場合）</li>
-        <li>利用者が設定画面で入力した緯度・経度・郵便番号</li>
-    </ul>
-    <p>利用目的: 天気予報・気圧グラフ・雨量レーダー表示のための地点特定、地域名の表示。</p>
+                <section id="graphPanel" class="panel graph-panel">
+                    <div id="eventAccentBar" class="event-accent-bar" aria-hidden="true"></div>
+                    <div class="graph-body">
+                        <div class="graph-view graph-view-pressure">
+                            <canvas id="pressureCanvas"></canvas>
+                        </div>
+                        <div class="graph-view graph-view-events" aria-live="polite">
+                            <div id="eventSpotlightCards" class="event-cards"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
 
-    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem;">2.2 カレンダー情報</h3>
-    <ul>
-        <li>端末に登録されているカレンダーの予定（タイトル、説明、場所、開始・終了日時、終日フラグ、表示色 等）</li>
-        <li>表示対象として利用者が選択したカレンダー ID</li>
-    </ul>
-    <p>利用目的: 本アプリ画面およびスクリーンセーバー、Chromecast 連携画面での予定表示。</p>
-    <p>
-        本アプリは <code>READ_CALENDAR</code> 権限を使用します。カレンダーの作成・変更・削除は行いません。
-    </p>
+            <section class="panel week-panel">
+                <div id="weekGrid" class="week-grid"></div>
+            </section>
 
-    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem;">2.3 外部カレンダー（iCal）設定</h3>
-    <ul>
-        <li>利用者が登録した外部カレンダーの名称および iCal 形式の URL</li>
-        <li>上記 URL から取得した予定データ</li>
-    </ul>
-    <p>利用目的: 端末カレンダー以外の予定を本アプリに表示するため。</p>
+            <section class="panel schedule-panel">
+                <div id="eventList" class="event-list"></div>
+            </section>
 
-    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem;">2.4 アプリ設定情報</h3>
-    <ul>
-        <li>位置・郵便番号、カレンダー選択、外部カレンダー設定、Cast 用カレンダー選択 等の設定値</li>
-    </ul>
-    <p>利用目的: 次回起動時以降の表示内容を維持するため。</p>
+            <div class="credits">
+                予報: Open-Meteo.com / 天気概況: 気象庁
+            </div>
+        </section>
+    </main>
 
-    <h3 style="font-size:1rem;margin:1.25rem 0 0.5rem;">2.5 端末・通信に関する情報</h3>
-    <ul>
-        <li>インターネット接続のための通信（天気 API、地図タイル、Cast Receiver の読み込み 等）</li>
-        <li>Chromecast 等 Cast 対応デバイスとのローカルネットワーク上の通信</li>
-    </ul>
-    <p>利用目的: 本アプリの機能提供に必要な通信処理。</p>
+    <script>
+        const NAMESPACE = 'urn:x-cast:jp.kyogg.weatherinfo';
+        const TILE_SIZE = 256;
+        let uiState = { calendarEvents: [] };
+        let radarDrawToken = 0;
+        const radarImageCache = new Map();
+        let lastRadarDrawKey = '';
+        let IS_CAST_RECEIVER = false;
+        const CAST = {
+            clockFallbackMs: 1000,
+            spotlightIdleMs: 10000,
+            spotlightWatchMs: 15000,
+            spotlightActiveMs: 15000,
+            resizeDebounceMs: 800,
+            canvasDpr: 1,
+            pressureCanvasDpr: 2,
+            radarCacheMax: 32,
+        };
+        let lastPressureDrawKey = '';
+        let resizeTimer = null;
 
-    <h2>3. 情報の保存場所と保存期間</h2>
-    <ul>
-        <li>
-            位置情報・設定・外部カレンダー URL 等は、原則として利用者の端末内
-            （SharedPreferences 等）に保存されます。
-        </li>
-        <li>
-            地図タイル等のキャッシュは、端末内の一時保存領域に保持される場合があります。
-        </li>
-        <li>
-            当方のサーバーに、利用者を特定できる情報を恒久的に保存することはありません。
-        </li>
-        <li>
-            保存期間は、アプリの利用期間中および利用者がアプリをアンインストールするまで、
-            または利用者が設定を削除するまでです。
-        </li>
-    </ul>
-    <p>
-        本アプリは Android のバックアップ機能（<code>allowBackup</code>）に対応している場合があります。
-        端末のバックアップ設定により、設定データが Google アカウント等にバックアップされることがあります。
-    </p>
+        function applyCastRuntimeProfile() {
+            IS_CAST_RECEIVER = !!(window.cast && cast.framework);
+            if (!IS_CAST_RECEIVER) {
+                CAST.clockFallbackMs = 250;
+                CAST.spotlightIdleMs = 5000;
+                CAST.spotlightWatchMs = 3000;
+                CAST.spotlightActiveMs = 1000;
+                CAST.resizeDebounceMs = 200;
+                CAST.canvasDpr = Math.min(window.devicePixelRatio || 1, 2);
+                CAST.pressureCanvasDpr = Math.min(window.devicePixelRatio || 1, 2);
+                CAST.radarCacheMax = 80;
+                return;
+            }
+            document.documentElement.classList.add('cast-receiver');
+            CAST.canvasDpr = 1;
+            CAST.pressureCanvasDpr = 2;
+        }
 
-    <h2>4. 第三者サービスへの送信</h2>
-    <p>
-        本アプリは、機能提供のため以下の第三者サービスに通信を行います。
-        各サービスにおける情報の取り扱いは、各事業者のプライバシーポリシーに従います。
-    </p>
+        function trimRadarCache() {
+            while (radarImageCache.size > CAST.radarCacheMax) {
+                const oldest = radarImageCache.keys().next().value;
+                if (oldest === undefined) break;
+                radarImageCache.delete(oldest);
+            }
+        }
 
-    <table>
-        <thead>
-            <tr>
-                <th>サービス</th>
-                <th>送信される主な情報</th>
-                <th>目的</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></td>
-                <td>緯度・経度</td>
-                <td>天気予報・気圧データの取得</td>
-            </tr>
-            <tr>
-                <td><a href="https://www.jma.go.jp/jma/kokusai/privacy.html" target="_blank" rel="noopener">気象庁（JMA）</a></td>
-                <td>地域コードに基づく予報取得リクエスト、地図タイル取得リクエスト</td>
-                <td>国内向け天気予報・ナウキャスト（雨量レーダー）の取得</td>
-            </tr>
-            <tr>
-                <td><a href="https://maps.gsi.go.jp/help/privacypolicy.html" target="_blank" rel="noopener">国土地理院</a></td>
-                <td>地図タイル取得リクエスト（ズーム・座標）</td>
-                <td>背景地図の表示</td>
-            </tr>
-            <tr>
-                <td><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Cast / Google Play 開発者サービス</a></td>
-                <td>Cast 接続に伴う通信、Receiver 読み込み、SDK 利用に伴う情報</td>
-                <td>Chromecast 等への画面表示、Cast 機能の提供</td>
-            </tr>
-            <tr>
-                <td>利用者が指定した iCal URL のホスト</td>
-                <td>URL へのアクセスリクエスト</td>
-                <td>外部カレンダー予定の取得</td>
-            </tr>
-            <tr>
-                <td><a href="https://kyoggodon-collab.github.io/weather/" target="_blank" rel="noopener">Cast Receiver（GitHub Pages）</a></td>
-                <td>Receiver アプリの取得リクエスト</td>
-                <td>Chromecast 上での表示 UI の提供</td>
-            </tr>
-        </tbody>
-    </table>
+        const el = (id) => document.getElementById(id);
+        const fmt2 = (n) => String(n).padStart(2, '0');
 
-    <h2>5. Chromecast（Cast）連携について</h2>
-    <p>
-        利用者が Cast 対応デバイスに接続した場合、本アプリは同一 Wi‑Fi 等のネットワーク上で、
-        表示用データ（時刻、天気、選択されたカレンダー予定、地域名、位置設定 等）を
-        Cast デバイスへ送信します。
-    </p>
-    <p>
-        Cast デバイス側では、当方が公開する Receiver（Web アプリ）が動作し、
-        天気・地図表示のために Open-Meteo、気象庁、国土地理院等へ直接通信する場合があります。
-    </p>
-    <p>
-        Cast 機能の利用有無は利用者の操作に依存します。接続を解除すれば、以降の Cast 送信は行われません。
-    </p>
+        function formatDisplayTime(value) {
+            const date = value instanceof Date ? value : new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return `${date.getHours()}:${fmt2(date.getMinutes())}`;
+        }
 
-    <h2>6. 権限の利用</h2>
-    <ul>
-        <li><strong>INTERNET</strong>: 天気・地図・外部カレンダー・Cast Receiver の取得</li>
-        <li><strong>READ_CALENDAR</strong>: 端末カレンダー予定の読み取り</li>
-        <li><strong>ACCESS_FINE_LOCATION / ACCESS_COARSE_LOCATION</strong>: 現在地の取得（許可時）</li>
-        <li><strong>WAKE_LOCK</strong>: 画面表示の維持（スクリーンセーバー利用時 等）</li>
-    </ul>
-    <p>権限は、端末の設定からいつでも取り消すことができます。</p>
+        function normalizeTimeLabel(label) {
+            const text = String(label ?? '').trim();
+            if (!text) return text;
+            const match = text.match(/^(\d{1,2}):(\d{2})$/);
+            if (match) return `${Number(match[1])}:${match[2]}`;
+            return text;
+        }
 
-    <h2>7. 分析・広告・トラッキング</h2>
-    <p>
-        当方は、本アプリ内に広告 SDK や利用状況分析 SDK（Firebase Analytics 等）を組み込んでいません。
-        ただし、Google Play 開発者サービスおよび Cast SDK の利用に伴い、
-        Google 側で技術的に必要な情報が処理される場合があります。
-    </p>
+        const fmtClockTime = (date) => formatDisplayTime(date);
+        let clockPollTimer = null;
+        let clockOffsetMs = 0;
+        let lastPhoneClockAt = 0;
+        const PHONE_CLOCK_STALE_MS = 5000;
+        let lastClockSecond = -1;
+        let lastClockMinute = '';
+        let lastClockDate = '';
+        let clockTimeNode = null;
+        let clockSecondsNode = null;
+        let clockDateNode = null;
+        let renderFrame = null;
+        let spotlightTimer = null;
+        let lastSpotlightGroupKey = '';
+        let lastSpotlightActiveIndex = -1;
+        let lastSpotlightMinuteKey = '';
+        const PRE_START_MS = 10 * 60 * 1000;
+        const SPOTLIGHT_ROTATE_MS = 20 * 1000;
+        const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
 
-    <h2>8. 利用者による管理</h2>
-    <ul>
-        <li>位置情報権限の付与・拒否・取り消し（Android 設定）</li>
-        <li>カレンダー権限の付与・拒否・取り消し（Android 設定）</li>
-        <li>アプリ内設定による位置・カレンダー・外部 iCal の変更・削除</li>
-        <li>アプリのアンインストールによる端末内データの削除</li>
-    </ul>
+        function findSpotlightGroup(events, nowMs) {
+            const timed = (Array.isArray(events) ? events : [])
+                .filter((event) => !event.allDay)
+                .map((event) => ({
+                    event,
+                    start: Number(event.start),
+                    end: Number(event.end),
+                }))
+                .filter(({ start, end }) => Number.isFinite(start) && Number.isFinite(end) && end > nowMs)
+                .sort((a, b) => a.start - b.start || String(a.event.id).localeCompare(String(b.event.id)));
 
-    <h2>9. 未成年者の利用</h2>
-    <p>
-        本アプリは、13 歳未満の方を対象としたサービスではありません。
-        13 歳未満の方が本アプリを利用する場合は、保護者の同意と監督のもとでご利用ください。
-    </p>
+            const inWindow = timed.filter(({ start }) => nowMs >= start - PRE_START_MS && nowMs < start);
+            if (inWindow.length === 0) return null;
 
-    <h2>10. 本ポリシーの変更</h2>
-    <p>
-        法令の改正、機能追加、その他必要に応じて、本ポリシーを変更することがあります。
-        重要な変更がある場合は、本ページの「最終更新日」を更新し、必要に応じてアプリ内等で告知します。
-        変更後に本アプリを利用した場合、変更後の本ポリシーに同意したものとみなします。
-    </p>
+            return { items: inWindow };
+        }
 
-    <h2>11. お問い合わせ</h2>
-    <p>
-        本ポリシーまたは個人情報の取り扱いに関するお問い合わせは、
-        以下よりご連絡ください。
-    </p>
-    <ul>
-        <li>
-            GitHub Issues:
-            <a href="https://github.com/kyoggodon-collab/weather/issues" target="_blank" rel="noopener">
-                https://github.com/kyoggodon-collab/weather/issues
-            </a>
-        </li>
-    </ul>
-    
-</main>
+        function getSpotlightCardIndex(group, nowMs) {
+            if (group.items.length <= 1) return 0;
+            const allSameStart = group.items.every(({ start }) => start === group.items[0].start);
+            if (allSameStart) {
+                const windowStart = group.items[0].start - PRE_START_MS;
+                const elapsed = Math.max(0, nowMs - windowStart);
+                return Math.floor(elapsed / SPOTLIGHT_ROTATE_MS) % group.items.length;
+            }
+            const slotMs = SPOTLIGHT_ROTATE_MS;
+            const earliestWindowStart = Math.min(...group.items.map(({ start }) => start - PRE_START_MS));
+            const elapsed = Math.max(0, nowMs - earliestWindowStart);
+            return Math.floor(elapsed / slotMs) % group.items.length;
+        }
+
+        function formatSpotlightCountdown(nowMs, startMs) {
+            const minutes = Math.max(0, Math.ceil((startMs - nowMs) / 60000));
+            if (minutes <= 0) return 'まもなく開始';
+            return `あと ${minutes}分`;
+        }
+
+        function buildEventMetaHtml(event, start, end) {
+            const rows = [];
+            const durationMin = Math.max(0, Math.round((end - start) / 60000));
+            if (durationMin > 0) {
+                rows.push({ label: '所要', value: `${durationMin}分` });
+            }
+
+            const location = cleanText(event.location, '');
+            if (location) rows.push({ label: '場所', value: location });
+
+            const description = cleanText(event.description, '');
+            if (description) rows.push({ label: '詳細', value: description });
+
+            if (rows.length === 0) return '';
+
+            return `
+                <div class="event-card-meta">
+                    ${rows.map(({ label, value }) => `
+                        <div class="event-card-meta-row">
+                            <span class="event-card-meta-label">${escapeHtml(label)}</span>
+                            <span class="event-card-meta-value">${escapeHtml(value)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function buildEventScheduleHtml(start, end, nowMs) {
+            const startLabel = formatClockFromMs(start);
+            const endLabel = formatClockFromMs(end);
+            const countdown = formatSpotlightCountdown(nowMs, start);
+            const timeParts = [];
+
+            if (startLabel) {
+                timeParts.push(
+                    '<span class="event-card-time-label">開始</span>',
+                    `<span class="event-card-time-value">${escapeHtml(startLabel)}</span>`,
+                );
+            }
+            if (endLabel) {
+                timeParts.push(
+                    '<span class="event-card-time-label">終了</span>',
+                    `<span class="event-card-time-value">${escapeHtml(endLabel)}</span>`,
+                );
+            }
+
+            return `
+                <div class="event-card-schedule">
+                    <div class="event-card-time-row">
+                        <div class="event-card-times">${timeParts.join('')}</div>
+                        <span class="event-card-countdown">${escapeHtml(countdown)}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildEventCardHtml(spotlight, nowMs, index, total) {
+            const { event, start, end } = spotlight;
+            const title = escapeHtml(cleanText(event.title, '無題'));
+            return `
+                <div class="event-card-label">まもなく開始</div>
+                <div class="event-card-title">${title}</div>
+                ${buildEventScheduleHtml(start, end, nowMs)}
+                ${buildEventMetaHtml(event, start, end)}
+            `;
+        }
+
+        function applySpotlightAccent(graphPanel, group, activeIndex) {
+            const bar = el('eventAccentBar');
+            if (!graphPanel || !group || activeIndex < 0) {
+                graphPanel?.style.removeProperty('--event-accent');
+                if (bar) bar.style.backgroundColor = '';
+                return;
+            }
+            const color = colorToCss(group.items[activeIndex].event.color);
+            graphPanel.style.setProperty('--event-accent', color);
+            if (bar) bar.style.backgroundColor = color;
+        }
+
+        function renderEventCards(cardsRoot, group, nowMs, activeIndex) {
+            cardsRoot.innerHTML = group.items.map((spotlight, index) => `
+                <article class="event-card${index === activeIndex ? ' is-active' : ''}">
+                    ${buildEventCardHtml(spotlight, nowMs, index, group.items.length)}
+                </article>
+            `).join('');
+        }
+
+        function setActiveEventCard(cardsRoot, activeIndex) {
+            cardsRoot.querySelectorAll('.event-card').forEach((node, index) => {
+                node.classList.toggle('is-active', index === activeIndex);
+            });
+        }
+
+        function getSpotlightPollDelay(nowMs) {
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            const group = findSpotlightGroup(events, nowMs);
+            if (!group) return CAST.spotlightIdleMs;
+            if (group.items.length > 1) {
+                return Math.max(400, Math.floor(SPOTLIGHT_ROTATE_MS / 2));
+            }
+            return CAST.spotlightWatchMs;
+        }
+
+        function updateEventSpotlight() {
+            const graphPanel = el('graphPanel');
+            const cardsRoot = el('eventSpotlightCards');
+            if (!graphPanel || !cardsRoot) return;
+
+            const nowMs = Date.now();
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            const group = findSpotlightGroup(events, nowMs);
+            const showEvent = !!group;
+            const activeIndex = group ? getSpotlightCardIndex(group, nowMs) : -1;
+
+            graphPanel.classList.toggle('mode-event', showEvent);
+            applySpotlightAccent(graphPanel, showEvent ? group : null, showEvent ? activeIndex : -1);
+
+            const groupKey = group
+                ? group.items.map(({ event, start }) => `${event.id}:${start}`).join(',')
+                : '';
+
+            if (!showEvent) {
+                if (lastSpotlightGroupKey) {
+                    cardsRoot.innerHTML = '';
+                    lastSpotlightGroupKey = '';
+                    lastSpotlightActiveIndex = -1;
+                    lastSpotlightMinuteKey = '';
+                }
+                return;
+            }
+
+            if (groupKey !== lastSpotlightGroupKey) {
+                renderEventCards(cardsRoot, group, nowMs, activeIndex);
+                lastSpotlightGroupKey = groupKey;
+                lastSpotlightActiveIndex = activeIndex;
+                lastSpotlightMinuteKey = '';
+                return;
+            }
+
+            if (activeIndex !== lastSpotlightActiveIndex) {
+                setActiveEventCard(cardsRoot, activeIndex);
+                lastSpotlightActiveIndex = activeIndex;
+            }
+
+            const minuteKey = group.items.map(({ event, start }) => (
+                `${event.id}:${Math.max(0, Math.ceil((start - nowMs) / 60000))}`
+            )).join('|');
+            if (minuteKey !== lastSpotlightMinuteKey) {
+                lastSpotlightMinuteKey = minuteKey;
+                cardsRoot.querySelectorAll('.event-card').forEach((node, index) => {
+                    const spotlight = group.items[index];
+                    if (!spotlight) return;
+                    const countdownNode = node.querySelector('.event-card-countdown');
+                    if (countdownNode) {
+                        countdownNode.textContent = formatSpotlightCountdown(nowMs, spotlight.start);
+                    }
+                });
+            }
+        }
+
+        function startSpotlightLoop() {
+            if (spotlightTimer) {
+                clearTimeout(spotlightTimer);
+                spotlightTimer = null;
+            }
+
+            const loop = () => {
+                updateEventSpotlight();
+                spotlightTimer = setTimeout(loop, getSpotlightPollDelay(Date.now()));
+            };
+
+            loop();
+        }
+
+        function stopSpotlightLoop() {
+            if (spotlightTimer) {
+                clearTimeout(spotlightTimer);
+                spotlightTimer = null;
+            }
+        }
+
+        function detectLayout() {
+            // 解像度判定でリスト形式へ落ちないよう、常に週間カレンダー(FHD)レイアウトを使う
+            document.documentElement.dataset.layout = 'fhd';
+            return 'fhd';
+        }
+
+        function getMaxEvents() {
+            return 8;
+        }
+
+        function getGraphPadding(width) {
+            const layout = document.documentElement.dataset.layout || 'fhd';
+            if (layout === 'nest-hub') {
+                return { left: 48, right: 18, top: 12, bottom: 24 };
+            }
+            return {
+                left: Math.max(52, width * 0.08),
+                right: Math.max(24, width * 0.03),
+                top: 16,
+                bottom: 30
+            };
+        }
+
+        function setText(id, value) {
+            const node = el(id);
+            if (node) node.textContent = value;
+        }
+
+        function setHtml(id, value) {
+            const node = el(id);
+            if (node) node.innerHTML = value;
+        }
+
+        function latLonToPixel(lat, lon, zoom) {
+            const scale = TILE_SIZE * Math.pow(2, zoom);
+            const x = (lon + 180) / 360 * scale;
+            const sinLat = Math.sin(lat * Math.PI / 180);
+            const y = (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale;
+            return { x, y };
+        }
+
+        function makeNearBlackTransparent(img) {
+            try {
+                const w = img.naturalWidth || img.width;
+                const h = img.naturalHeight || img.height;
+                if (!w || !h) return img;
+                const c = document.createElement('canvas');
+                c.width = w;
+                c.height = h;
+                const cctx = c.getContext('2d', { willReadFrequently: true });
+                cctx.drawImage(img, 0, 0);
+                const imageData = cctx.getImageData(0, 0, w, h);
+                const d = imageData.data;
+                for (let i = 0; i < d.length; i += 4) {
+                    if (d[i + 3] === 0) continue;
+                    if (d[i] <= 12 && d[i + 1] <= 12 && d[i + 2] <= 12) {
+                        d[i + 3] = 0;
+                    }
+                }
+                cctx.putImageData(imageData, 0, 0);
+                return c;
+            } catch (e) {
+                return img;
+            }
+        }
+
+        function loadImage(url) {
+            if (radarImageCache.has(url)) {
+                const cached = radarImageCache.get(url);
+                return cached instanceof Promise ? cached : Promise.resolve(cached);
+            }
+            const pending = new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    const isJmaRadar = url.includes('/surf/hrpns/');
+                    const prepared = isJmaRadar ? makeNearBlackTransparent(img) : img;
+                    radarImageCache.set(url, prepared);
+                    trimRadarCache();
+                    resolve(prepared);
+                };
+                img.onerror = () => {
+                    radarImageCache.set(url, null);
+                    resolve(null);
+                };
+                img.src = url;
+            });
+            radarImageCache.set(url, pending);
+            return pending;
+        }
+
+        function formatRadarTime(validtime) {
+            if (!validtime || validtime.length < 12) return '';
+            const h = Number(validtime.slice(8, 10));
+            const mi = Number(validtime.slice(10, 12));
+            if (!Number.isFinite(h) || !Number.isFinite(mi)) return '';
+            return `実況 ${h}:${fmt2(mi)}`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function cleanText(value, fallback = '') {
+            return String(value ?? fallback)
+                .replace(/\\,/g, ',')
+                .replace(/\\;/g, ';')
+                .replace(/\\n/g, ' ')
+                .replace(/\\/g, '')
+                .trim();
+        }
+
+        function weatherEmoji(condition, isNight = false) {
+            const main = String(condition || '').split('_')[0];
+            if (main === 'Clear') return isNight ? '🌙' : '☀️';
+            if (main === 'Clouds') return '☁️';
+            if (main === 'Rain') return '☔';
+            if (main === 'Snow') return '❄️';
+            if (main === 'Thunder') return '⚡';
+            if (main === 'Fog') return '🌫️';
+            return '☁️';
+        }
+
+        function colorToCss(color) {
+            if (typeof color === 'string' && color.trim().startsWith('#')) return color.trim();
+            if (typeof color !== 'number') return '#62c8ff';
+            const rgb = (color >>> 0) & 0x00ffffff;
+            return '#' + rgb.toString(16).padStart(6, '0');
+        }
+
+        function formatDateFromMillis(ms) {
+            const date = new Date(ms);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+        }
+
+        function formatEventTime(event) {
+            const start = new Date(event.start);
+            const end = new Date(event.end);
+            if (Number.isNaN(start.getTime())) return '';
+            const day = start.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric', weekday: 'short' });
+            if (event.allDay) return `${day} 終日`;
+            const startTime = formatDisplayTime(start);
+            const endTime = Number.isNaN(end.getTime()) ? '' : ` - ${formatDisplayTime(end)}`;
+            return `${day} ${startTime}${endTime}`;
+        }
+
+        function startOfDay(date) {
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function startOfWeekSunday(date) {
+            const day = startOfDay(date);
+            day.setDate(day.getDate() - day.getDay());
+            return day;
+        }
+
+        function sameDay(a, b) {
+            return a.getFullYear() === b.getFullYear()
+                && a.getMonth() === b.getMonth()
+                && a.getDate() === b.getDate();
+        }
+
+        function formatEventTimeShort(event) {
+            if (event.allDay) return '終日';
+            const start = new Date(event.start);
+            if (Number.isNaN(start.getTime())) return '';
+            return formatDisplayTime(start);
+        }
+
+        function getHourlyWindow(weather) {
+            const hourly = Array.isArray(weather?.hourlyForecast) ? weather.hourlyForecast : [];
+            if (hourly.length <= 6) return hourly;
+
+            const currentHour = new Date().getHours();
+            const start = Math.max(0, Math.min(hourly.length - 6, currentHour));
+            return hourly.slice(start, start + 6);
+        }
+
+        function getSyncedNow() {
+            if (Date.now() - lastPhoneClockAt < PHONE_CLOCK_STALE_MS) {
+                return new Date(Date.now() + clockOffsetMs);
+            }
+            return new Date();
+        }
+
+        function applyPhoneClockSync(epochMs) {
+            const remote = Number(epochMs);
+            if (!Number.isFinite(remote)) return;
+            clockOffsetMs = remote - Date.now();
+            lastPhoneClockAt = Date.now();
+            renderClock(getSyncedNow());
+        }
+
+        function getClockNodes() {
+            if (!clockTimeNode) clockTimeNode = el('time');
+            if (!clockSecondsNode) clockSecondsNode = el('seconds');
+            if (!clockDateNode) clockDateNode = el('date');
+            return { clockTimeNode, clockSecondsNode, clockDateNode };
+        }
+
+        function stopLocalClock() {
+            if (clockPollTimer) {
+                clearTimeout(clockPollTimer);
+                clockPollTimer = null;
+            }
+        }
+
+        function renderClock() {
+            const now = getSyncedNow();
+            const sec = now.getSeconds();
+            const timeStr = fmtClockTime(now);
+            const secStr = fmt2(sec);
+            const dateStr = now.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short',
+            });
+
+            if (sec === lastClockSecond && timeStr === lastClockMinute && dateStr === lastClockDate) {
+                return;
+            }
+
+            const { clockTimeNode, clockSecondsNode, clockDateNode } = getClockNodes();
+            if (clockSecondsNode) {
+                clockSecondsNode.textContent = secStr;
+            }
+            if (timeStr !== lastClockMinute && clockTimeNode) {
+                clockTimeNode.textContent = timeStr;
+                lastClockMinute = timeStr;
+            }
+            if (dateStr !== lastClockDate && clockDateNode) {
+                clockDateNode.textContent = dateStr;
+                lastClockDate = dateStr;
+            }
+            lastClockSecond = sec;
+        }
+
+        function ingestCastPayload(raw) {
+            const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (data && data._clock === true) {
+                applyPhoneClockSync(data.t);
+                return true;
+            }
+            uiState = data || { calendarEvents: [] };
+            scheduleRender();
+            return false;
+        }
+
+        function startLocalClock() {
+            stopLocalClock();
+            lastClockSecond = -1;
+            renderClock();
+
+            const poll = () => {
+                if (Date.now() - lastPhoneClockAt >= PHONE_CLOCK_STALE_MS) {
+                    renderClock();
+                }
+                clockPollTimer = setTimeout(poll, CAST.clockFallbackMs);
+            };
+            poll();
+        }
+
+        function renderWeather() {
+            const weather = uiState.weather;
+            setText('place', uiState.detectedAreaName || 'Weather Info');
+            if (!weather) {
+                setText('currentIcon', '--');
+                setText('currentTemp', '--℃');
+                setHtml('tempMax', `--<span class="temp-unit">℃</span>`);
+                setHtml('tempMin', `--<span class="temp-unit">℃</span>`);
+                setText('pop', '降水 --%');
+                setText('radarTime', '');
+                return;
+            }
+
+            const temp = round(weather.temp);
+            const tempMax = round(weather.tempMax);
+            const tempMin = round(weather.tempMin);
+            const pop = round(weather.pop);
+
+            setText('currentIcon', weatherEmoji(weather.condition));
+            setText('currentTemp', temp === null ? '--℃' : `${temp}℃`);
+            setHtml('tempMax', `${tempMax === null ? '--' : tempMax}<span class="temp-unit">℃</span>`);
+            setHtml('tempMin', `${tempMin === null ? '--' : tempMin}<span class="temp-unit">℃</span>`);
+            setText('pop', pop === null ? '降水 --%' : `降水 ${pop}%`);
+            setText('radarTime', formatRadarTime(weather.nowcastMeta?.validtime));
+        }
+
+        function renderHourly() {
+            const grid = el('hourlyGrid');
+            const hours = getHourlyWindow(uiState.weather);
+            if (!grid) return;
+            if (hours.length === 0) {
+                grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">時間別予報を待っています</div>';
+                return;
+            }
+            grid.innerHTML = hours.map((hour) => {
+                const temp = round(hour.temp);
+                const pop = round(hour.pop);
+                return `
+                    <div class="hour-card">
+                        <div class="hour-time">${escapeHtml(normalizeTimeLabel(hour.time || ''))}</div>
+                        <div class="hour-icon">${weatherEmoji(hour.condition, hour.isNight)}</div>
+                        <div class="hour-temp">${temp === null ? '--' : temp}℃</div>
+                        <div class="hour-pop">${pop === null ? '--%' : `${pop}%`}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function findDailyForDay(dailyList, dayDate) {
+            const dayStart = startOfDay(dayDate).getTime();
+            return dailyList.find((item) => {
+                const itemDay = startOfDay(new Date(Number(item.date))).getTime();
+                return itemDay === dayStart;
+            });
+        }
+
+        function renderDailyWeek() {
+            const grid = el('dailyWeekGrid');
+            if (!grid) return;
+
+            const daily = Array.isArray(uiState.weather?.dailyForecast) ? uiState.weather.dailyForecast : [];
+            const weekStart = startOfWeekSunday(new Date());
+            const today = new Date();
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+
+            if (daily.length === 0) {
+                grid.innerHTML = '<div class="empty" style="grid-column:1/-1;">週間天気を待っています</div>';
+                return;
+            }
+
+            grid.innerHTML = Array.from({ length: 7 }, (_, index) => {
+                const day = new Date(weekStart);
+                day.setDate(weekStart.getDate() + index);
+                const forecast = findDailyForDay(daily, day);
+                const classes = ['daily-week-cell', sameDay(day, today) ? 'today' : ''].filter(Boolean).join(' ');
+
+                if (!forecast) {
+                    return `
+                        <div class="${classes}">
+                            <div class="daily-week-dow">${dayNames[index]}</div>
+                            <div class="daily-week-icon">--</div>
+                            <div class="daily-week-temps"><span>--</span><span>--</span></div>
+                        </div>
+                    `;
+                }
+
+                const tempMax = round(forecast.tempMax);
+                const tempMin = round(forecast.tempMin);
+                const pop = round(forecast.pop);
+                return `
+                    <div class="${classes}">
+                        <div class="daily-week-dow">${dayNames[index]}</div>
+                        <div class="daily-week-icon">${weatherEmoji(forecast.condition)}</div>
+                        <div class="daily-week-temps">
+                            <span class="daily-week-temp-max">${tempMax === null ? '--' : tempMax}°</span>
+                            <span class="daily-week-temp-min">${tempMin === null ? '--' : tempMin}°</span>
+                        </div>
+                        <div class="daily-week-pop">${pop === null ? '--' : pop}%</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderEvents() {
+            const list = el('eventList');
+            if (!list) return;
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            const now = Date.now();
+            const upcoming = events
+                .filter((event) => Number(event.end) >= now)
+                .sort((a, b) => Number(a.start) - Number(b.start))
+                .slice(0, getMaxEvents());
+
+            if (upcoming.length === 0) {
+                list.innerHTML = '<div class="empty">予定はありません</div>';
+                return;
+            }
+
+            list.innerHTML = upcoming.map((event) => {
+                const title = escapeHtml(cleanText(event.title, '無題'));
+                const location = cleanText(event.location, '');
+                return `
+                    <article class="event-card" style="border-left-color:${colorToCss(event.color)}">
+                        <div class="event-title">${title}</div>
+                        <div class="event-time">${escapeHtml(formatEventTime(event))}</div>
+                        ${location ? `<div class="event-location">${escapeHtml(location)}</div>` : ''}
+                    </article>
+                `;
+            }).join('');
+        }
+
+        const CAL_START_MINUTES = 8 * 60 + 30;
+        const CAL_END_MINUTES = 22 * 60 + 30;
+        const CAL_DURATION_MINUTES = CAL_END_MINUTES - CAL_START_MINUTES;
+        const CAL_SEGMENT_COUNT = 14;
+
+        function msFromDayMinutes(dayStartMs, minutes) {
+            return dayStartMs + minutes * 60000;
+        }
+
+        function calendarMinuteToPercent(minutesFromMidnight) {
+            return ((minutesFromMidnight - CAL_START_MINUTES) / CAL_DURATION_MINUTES) * 100;
+        }
+
+        function buildCalendarTimeLabels() {
+            return Array.from({ length: 14 }, (_, index) => {
+                const hour = 9 + index;
+                const pct = calendarMinuteToPercent(hour * 60);
+                return `<div class="week-cal-time" style="top:${pct}%">${hour}:00</div>`;
+            }).join('');
+        }
+
+        function buildCalendarHourLines() {
+            return Array.from({ length: 14 }, (_, index) => {
+                const pct = calendarMinuteToPercent((9 + index) * 60);
+                return `<div class="week-cal-hour-line" style="top:${pct}%"></div>`;
+            }).join('');
+        }
+
+        function eventOverlapsDay(event, dayStartMs, dayEndMs) {
+            return Number(event.end) > dayStartMs && Number(event.start) < dayEndMs;
+        }
+
+        function formatClockFromMs(ms) {
+            return formatDisplayTime(ms);
+        }
+
+        function formatEventBlockTime(startMs, endMs) {
+            return `${formatClockFromMs(startMs)} - ${formatClockFromMs(endMs)}`;
+        }
+
+        function clipEventToDayRange(event, dayStartMs) {
+            const rangeStart = msFromDayMinutes(dayStartMs, CAL_START_MINUTES);
+            const rangeEnd = msFromDayMinutes(dayStartMs, CAL_END_MINUTES);
+            const clipStart = Math.max(Number(event.start), rangeStart);
+            const clipEnd = Math.min(Number(event.end), rangeEnd);
+            if (clipEnd <= clipStart) return null;
+            return { event, clipStart, clipEnd, rangeStart };
+        }
+
+        function assignEventColumns(blocks) {
+            if (!blocks.length) return [];
+            const sorted = [...blocks].sort((a, b) => a.clipStart - b.clipStart || a.clipEnd - b.clipEnd);
+            const placed = sorted.map((block) => ({ ...block, col: 0, colCount: 1 }));
+
+            let index = 0;
+            while (index < placed.length) {
+                let groupEnd = placed[index].clipEnd;
+                let next = index + 1;
+                while (next < placed.length && placed[next].clipStart < groupEnd) {
+                    groupEnd = Math.max(groupEnd, placed[next].clipEnd);
+                    next += 1;
+                }
+
+                const group = placed.slice(index, next);
+                const colEnds = [];
+                group.forEach((block) => {
+                    let col = 0;
+                    while (colEnds[col] && colEnds[col] > block.clipStart) col += 1;
+                    colEnds[col] = block.clipEnd;
+                    block.col = col;
+                });
+                const colCount = Math.max(1, colEnds.length);
+                group.forEach((block) => { block.colCount = colCount; });
+                index = next;
+            }
+
+            return placed;
+        }
+
+        function renderWeekCalendar() {
+            const grid = el('weekGrid');
+            const events = Array.isArray(uiState.calendarEvents) ? uiState.calendarEvents : [];
+            if (!grid) return;
+
+            const weekStart = startOfWeekSunday(new Date());
+            const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+            const today = new Date();
+            const days = Array.from({ length: 7 }, (_, index) => {
+                const day = new Date(weekStart);
+                day.setDate(weekStart.getDate() + index);
+                return day;
+            });
+
+            const headHtml = days.map((day, index) => {
+                const classes = [
+                    'week-cal-day-head',
+                    index === 0 ? 'sunday' : '',
+                    index === 6 ? 'saturday' : '',
+                    sameDay(day, today) ? 'today' : '',
+                ].filter(Boolean).join(' ');
+                return `
+                    <div class="${classes}" data-week-day="${index}">
+                        <span class="week-dow">${dayNames[index]}</span>
+                        <span class="week-date-num">${day.getDate()}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const alldayHtml = days.map((day, index) => {
+                const dayStart = startOfDay(day).getTime();
+                const dayEnd = dayStart + 86400000;
+                const alldayEvents = events
+                    .filter((event) => event.allDay && eventOverlapsDay(event, dayStart, dayEnd))
+                    .sort((a, b) => Number(a.start) - Number(b.start) || cleanText(a.title).localeCompare(cleanText(b.title), 'ja'));
+
+                return `
+                    <div class="week-cal-allday-col${sameDay(day, today) ? ' today-col' : ''}" data-week-day="${index}">
+                        ${alldayEvents.map((event) => `
+                            <div class="week-cal-allday-event" style="border-left-color:${colorToCss(event.color)};background:${colorToCss(event.color)}33">
+                                ${escapeHtml(cleanText(event.title, '無題'))}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }).join('');
+
+            const timeLabels = buildCalendarTimeLabels();
+            const hourLines = buildCalendarHourLines();
+
+            const columnsHtml = days.map((day, index) => {
+                const dayStart = startOfDay(day).getTime();
+                const dayEnd = dayStart + 86400000;
+                const timedBlocks = events
+                    .filter((event) => !event.allDay && eventOverlapsDay(event, dayStart, dayEnd))
+                    .map((event) => clipEventToDayRange(event, dayStart))
+                    .filter(Boolean);
+                const laidOut = assignEventColumns(timedBlocks);
+                const totalMs = CAL_DURATION_MINUTES * 60000;
+
+                const eventsHtml = laidOut.map(({ event, clipStart, clipEnd, col, colCount, rangeStart }) => {
+                    const top = ((clipStart - rangeStart) / totalMs) * 100;
+                    const height = Math.max(((clipEnd - clipStart) / totalMs) * 100, 100 / CAL_SEGMENT_COUNT * 0.4);
+                    const width = 100 / colCount;
+                    const left = width * col;
+                    const isShort = (clipEnd - clipStart) < 45 * 60000;
+                    const color = colorToCss(event.color);
+                    return `
+                        <article
+                            class="week-cal-event${isShort ? ' short' : ''}"
+                            style="top:${top}%;height:${height}%;left:calc(${left}% + 1px);width:calc(${width}% - 2px);border-left-color:${color};background:${color}44"
+                        >
+                            <div class="week-cal-event-time">${escapeHtml(formatEventBlockTime(clipStart, clipEnd))}</div>
+                            <div class="week-cal-event-title">${escapeHtml(cleanText(event.title, '無題'))}</div>
+                        </article>
+                    `;
+                }).join('');
+
+                const classes = ['week-cal-col', sameDay(day, today) ? 'today' : ''].filter(Boolean).join(' ');
+                return `
+                    <div class="${classes}" data-week-day="${index}">
+                        <div class="week-cal-col-lines">${hourLines}</div>
+                        ${eventsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            grid.innerHTML = `
+                <div class="week-cal">
+                    <div class="week-cal-head">
+                        <div class="week-cal-corner"></div>
+                        ${headHtml}
+                    </div>
+                    <div class="week-cal-allday">
+                        <div class="week-cal-allday-label"></div>
+                        ${alldayHtml}
+                    </div>
+                    <div class="week-cal-body">
+                        <div class="week-cal-times">${timeLabels}</div>
+                        <div class="week-cal-columns">${columnsHtml}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function drawRadar() {
+            const canvas = el('radarCanvas');
+            const wrap = canvas?.parentElement;
+            if (!canvas || !wrap) return Promise.resolve();
+
+            const drawToken = ++radarDrawToken;
+            const width = Math.max(1, Math.floor(wrap.clientWidth));
+            const height = Math.max(1, Math.floor(wrap.clientHeight));
+
+            const lat = Number(uiState.manualLat);
+            const lon = Number(uiState.manualLon);
+            const meta = uiState.weather?.nowcastMeta;
+            const zoom = 10;
+            const drawKey = `${lat},${lon},${meta?.basetime || ''},${meta?.validtime || ''},${width}x${height}`;
+            if (drawKey === lastRadarDrawKey && canvas.width > 0) return Promise.resolve();
+
+            // タイル256pxを1:1で描く（DPR拡大による引き伸ばしを避ける）
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, width, height);
+            lastRadarDrawKey = drawKey;
+
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+                ctx.fillStyle = '#687080';
+                ctx.font = `${Math.max(12, width * 0.04)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('位置情報を待っています', width / 2, height / 2);
+                return Promise.resolve();
+            }
+
+            const center = latLonToPixel(lat, lon, zoom);
+            const topLeftX = center.x - width / 2;
+            const topLeftY = center.y - height / 2;
+            const startTx = Math.floor(topLeftX / TILE_SIZE);
+            const startTy = Math.floor(topLeftY / TILE_SIZE);
+            const endTx = Math.floor((topLeftX + width) / TILE_SIZE);
+            const endTy = Math.floor((topLeftY + height) / TILE_SIZE);
+            const gsiBase = 'https://cyberjapandata.gsi.go.jp/xyz/pale/';
+            const jmaBase = meta
+                ? `https://www.jma.go.jp/bosai/jmatile/data/nowc/${meta.basetime}/none/${meta.validtime}/surf/hrpns/`
+                : null;
+
+            const jobs = [];
+            for (let ty = startTy; ty <= endTy; ty++) {
+                for (let tx = startTx; tx <= endTx; tx++) {
+                    jobs.push({
+                        tx,
+                        ty,
+                        drawX: Math.round(tx * TILE_SIZE - topLeftX),
+                        drawY: Math.round(ty * TILE_SIZE - topLeftY),
+                    });
+                }
+            }
+
+            const urls = [];
+            jobs.forEach(({ tx, ty }) => {
+                urls.push(`${gsiBase}${zoom}/${tx}/${ty}.png`);
+                if (jmaBase) urls.push(`${jmaBase}${zoom}/${tx}/${ty}.png`);
+            });
+
+            return Promise.all(urls.map(loadImage)).then(() => {
+                if (drawToken !== radarDrawToken) return;
+
+                jobs.forEach(({ tx, ty, drawX, drawY }) => {
+                    const gsiImg = radarImageCache.get(`${gsiBase}${zoom}/${tx}/${ty}.png`);
+                    if (gsiImg && !(gsiImg instanceof Promise)) {
+                        ctx.drawImage(gsiImg, 0, 0, TILE_SIZE, TILE_SIZE, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                    }
+                });
+
+                if (jmaBase) {
+                    ctx.save();
+                    // 黒（無降水）はタイル側で透過済み。降水色だけ少し透過して地図を見せる
+                    ctx.globalAlpha = 0.78;
+                    jobs.forEach(({ tx, ty, drawX, drawY }) => {
+                        const jmaImg = radarImageCache.get(`${jmaBase}${zoom}/${tx}/${ty}.png`);
+                        if (jmaImg && !(jmaImg instanceof Promise)) {
+                            ctx.drawImage(jmaImg, 0, 0, TILE_SIZE, TILE_SIZE, drawX, drawY, TILE_SIZE, TILE_SIZE);
+                        }
+                    });
+                    ctx.restore();
+                }
+
+                const pinX = width / 2;
+                const pinY = height / 2;
+                ctx.fillStyle = '#4caf50';
+                ctx.beginPath();
+                ctx.arc(pinX, pinY - 7, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(pinX - 7, pinY - 2);
+                ctx.lineTo(pinX, pinY + 10);
+                ctx.lineTo(pinX + 7, pinY - 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#111';
+                ctx.beginPath();
+                ctx.arc(pinX, pinY - 7, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (!jmaBase) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                    ctx.font = `${Math.max(11, width * 0.028)}px sans-serif`;
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('レーダー待機中', width - 8, height - 8);
+                }
+            });
+        }
+
+        function drawPressure(force = false) {
+            const canvas = el('pressureCanvas');
+            const wrap = canvas?.parentElement;
+            if (!canvas || !wrap) return;
+
+            const ratio = CAST.pressureCanvasDpr;
+            const width = Math.max(1, wrap.clientWidth);
+            const height = Math.max(1, wrap.clientHeight);
+            const data = getHourlyWindow(uiState.weather)
+                .map((hour) => ({ label: normalizeTimeLabel(hour.time || ''), value: Number(hour.pressure) }))
+                .filter((point) => Number.isFinite(point.value));
+            const dataKey = data.map((point) => `${point.label}:${point.value}`).join('|');
+            const drawKey = `${width}x${height}@${ratio}|${dataKey}`;
+            if (!force && drawKey === lastPressureDrawKey && canvas.width > 0) return;
+            lastPressureDrawKey = drawKey;
+
+            canvas.width = Math.floor(width * ratio);
+            canvas.height = Math.floor(height * ratio);
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+
+            const ctx = canvas.getContext('2d');
+            ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            if (typeof ctx.imageSmoothingQuality === 'string') {
+                ctx.imageSmoothingQuality = 'high';
+            }
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.fillStyle = '#687080';
+            const layout = document.documentElement.dataset.layout || 'fhd';
+            const fontSize = layout === 'nest-hub'
+                ? Math.max(11, width * 0.03)
+                : Math.max(13, width * 0.034);
+            ctx.font = `${fontSize}px system-ui, sans-serif`;
+
+            if (data.length < 2) {
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('気圧データを待っています', width / 2, height / 2);
+                return;
+            }
+
+            const pad = getGraphPadding(width);
+            const plotW = width - pad.left - pad.right;
+            const plotH = height - pad.top - pad.bottom;
+            const values = data.map((point) => point.value);
+            const min = Math.floor(Math.min(...values) - 1);
+            const max = Math.ceil(Math.max(...values) + 1);
+            const range = Math.max(1, max - min);
+            const x = (i) => pad.left + (plotW * i) / (data.length - 1);
+            const y = (value) => pad.top + plotH - ((value - min) / range) * plotH;
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+            ctx.lineWidth = 1;
+            ctx.fillStyle = '#687080';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 3; i++) {
+                const yy = pad.top + (plotH * i) / 3;
+                const value = Math.round(max - (range * i) / 3);
+                ctx.beginPath();
+                ctx.moveTo(pad.left, yy);
+                ctx.lineTo(width - pad.right, yy);
+                ctx.stroke();
+                ctx.fillText(String(value), pad.left - 8, yy);
+            }
+
+            ctx.beginPath();
+            data.forEach((point, i) => {
+                const px = x(i);
+                const py = y(point.value);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            ctx.strokeStyle = '#62c8ff';
+            ctx.lineWidth = 2.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            ctx.fillStyle = '#62c8ff';
+            data.forEach((point, i) => {
+                ctx.beginPath();
+                ctx.arc(x(i), y(point.value), 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.fillStyle = '#aab2c0';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            data.forEach((point, i) => {
+                if (i === 0 || i === data.length - 1 || i % 2 === 1) {
+                    ctx.fillText(point.label, x(i), height - pad.bottom + 9);
+                }
+            });
+        }
+
+        function scheduleHeavyDraw() {
+            drawPressure();
+            setTimeout(() => drawRadar(), 0);
+        }
+
+        function scheduleRender() {
+            if (renderFrame !== null) return;
+            renderFrame = requestAnimationFrame(() => {
+                renderFrame = null;
+                render();
+            });
+        }
+
+        function render() {
+            renderWeather();
+            renderHourly();
+            renderDailyWeek();
+            renderWeekCalendar();
+            renderEvents();
+            scheduleHeavyDraw();
+        }
+
+        window.__setWeatherInfoState = (nextState) => {
+            uiState = nextState || { calendarEvents: [] };
+            scheduleRender();
+        };
+
+        function startCastReceiver() {
+            applyCastRuntimeProfile();
+
+            if (!window.cast || !cast.framework) {
+                console.warn('Cast framework is not available. Running in browser preview mode.');
+                return;
+            }
+
+            const context = cast.framework.CastReceiverContext.getInstance();
+            context.addCustomMessageListener(NAMESPACE, (event) => {
+                try {
+                    ingestCastPayload(event.data);
+                } catch (error) {
+                    console.error('Failed to parse cast message', error);
+                }
+            });
+
+            const options = new cast.framework.CastReceiverOptions();
+            // メディア非再生のカスタム UI でもアイドル切断しない
+            options.disableIdleTimeout = true;
+            options.maxInactivity = 3600;
+            context.start(options);
+        }
+
+        function refreshLayoutViews() {
+            detectLayout();
+            lastRadarDrawKey = '';
+            lastPressureDrawKey = '';
+            drawRadar();
+            drawPressure(true);
+            if (!IS_CAST_RECEIVER) {
+                renderDailyWeek();
+                renderWeekCalendar();
+                renderEvents();
+                return;
+            }
+            updateEventSpotlight();
+        }
+
+        function scheduleLayoutRefresh() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(refreshLayoutViews, CAST.resizeDebounceMs);
+        }
+
+        window.addEventListener('resize', scheduleLayoutRefresh);
+        applyCastRuntimeProfile();
+        startLocalClock();
+        startSpotlightLoop();
+        detectLayout();
+        startCastReceiver();
+        render();
+        scheduleLayoutRefresh();
+    </script>
 </body>
 </html>
