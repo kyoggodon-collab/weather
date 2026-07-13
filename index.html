@@ -1340,6 +1340,11 @@
                     if (countdownNode) {
                         countdownNode.textContent = formatSpotlightCountdown(nowMs, spotlight.start);
                     }
+                    // ラベルの動的更新を追加
+                    const labelNode = node.querySelector('.event-card-label');
+                    if (labelNode) {
+                        labelNode.textContent = (spotlight.start - nowMs) > 600000 ? '次の予定' : 'まもなく開始';
+                    }
                 });
             }
         }
