@@ -1241,8 +1241,10 @@
         function buildEventCardHtml(spotlight, nowMs, index, total) {
             const { event, start, end } = spotlight;
             const title = escapeHtml(cleanText(event.title, '無題'));
+            // 残り時間が10分(600000ms)より多い場合は「次の予定」、それ以下は「まもなく開始」
+            const labelText = (start - nowMs) > 600000 ? '次の予定' : 'まもなく開始';
             return `
-                <div class="event-card-label">まもなく開始</div>
+                <div class="event-card-label">${labelText}</div>
                 <div class="event-card-title">${title}</div>
                 ${buildEventScheduleHtml(start, end, nowMs)}
                 ${buildEventMetaHtml(event, start, end)}
