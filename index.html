@@ -1031,13 +1031,13 @@
             min-height: 0;
             padding: calc(var(--u) * 0.8) calc(var(--u) * 1.0);
             box-sizing: border-box;
-            gap: calc(var(--u) * 0.6);
+            gap: calc(var(--u) * 0.8);
         }
 
         .timetable-cols {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: calc(var(--u) * 1.0);
+            gap: calc(var(--u) * 1.6);
             flex: 1;
             min-height: 0;
         }
@@ -1048,25 +1048,25 @@
             background: rgba(255, 255, 255, 0.035);
             border-radius: calc(var(--u) * 0.8);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: calc(var(--u) * 0.6) calc(var(--u) * 0.8);
+            padding: calc(var(--u) * 0.8) calc(var(--u) * 1.0);
             min-height: 0;
         }
 
         .timetable-header {
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.15);
-            padding-bottom: calc(var(--u) * 0.4);
-            border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: calc(var(--u) * 0.4);
+            gap: calc(var(--u) * 0.3);
+            padding-bottom: calc(var(--u) * 0.6);
+            border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: calc(var(--u) * 0.6);
         }
 
         .line-badge {
             align-self: flex-start;
-            font-size: calc(var(--u) * 0.8);
+            font-size: calc(var(--u) * 1.1);
             font-weight: bold;
-            padding: calc(var(--u) * 0.08) calc(var(--u) * 0.4);
-            border-radius: calc(var(--u) * 0.3);
+            padding: calc(var(--u) * 0.1) calc(var(--u) * 0.5);
+            border-radius: calc(var(--u) * 0.35);
             color: #fff;
         }
 
@@ -1079,16 +1079,16 @@
         }
 
         .station-name {
-            font-size: calc(var(--u) * 1.3);
+            font-size: calc(var(--u) * 1.8);
             font-weight: bold;
             color: var(--text);
         }
 
         .station-name .direction {
-            font-size: calc(var(--u) * 0.8);
+            font-size: calc(var(--u) * 1.1);
             font-weight: normal;
             color: var(--muted);
-            margin-left: calc(var(--u) * 0.3);
+            margin-left: calc(var(--u) * 0.4);
         }
 
         .timetable-list {
@@ -1096,7 +1096,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            gap: calc(var(--u) * 0.3);
+            gap: calc(var(--u) * 0.5);
         }
 
         .timetable-row {
@@ -1104,9 +1104,9 @@
             justify-content: space-between;
             align-items: center;
             background: rgba(255, 255, 255, 0.02);
-            border-radius: calc(var(--u) * 0.4);
-            padding: calc(var(--u) * 0.3) calc(var(--u) * 0.5);
-            border-left: calc(var(--u) * 0.16) solid transparent;
+            border-radius: calc(var(--u) * 0.5);
+            padding: calc(var(--u) * 0.6) calc(var(--u) * 0.8);
+            border-left: calc(var(--u) * 0.25) solid transparent;
         }
 
         .timetable-row.first-train {
@@ -1117,20 +1117,20 @@
         .timetable-left {
             display: flex;
             align-items: center;
-            gap: calc(var(--u) * 0.5);
+            gap: calc(var(--u) * 0.8);
         }
 
         .train-time {
-            font-size: calc(var(--u) * 1.35);
+            font-size: calc(var(--u) * 2.2);
             font-weight: 500;
             font-variant-numeric: tabular-nums;
         }
 
         .train-type-badge {
-            font-size: calc(var(--u) * 0.72);
+            font-size: calc(var(--u) * 1.1);
             font-weight: bold;
-            padding: calc(var(--u) * 0.04) calc(var(--u) * 0.25);
-            border-radius: calc(var(--u) * 0.2);
+            padding: calc(var(--u) * 0.08) calc(var(--u) * 0.4);
+            border-radius: calc(var(--u) * 0.25);
             background: rgba(255, 255, 255, 0.08);
             color: var(--muted);
         }
@@ -1142,7 +1142,7 @@
         }
 
         .train-dest {
-            font-size: calc(var(--u) * 1.05);
+            font-size: calc(var(--u) * 1.7);
             font-weight: 500;
             color: var(--text);
         }
@@ -1153,10 +1153,10 @@
         }
 
         .countdown-badge {
-            font-size: calc(var(--u) * 0.88);
+            font-size: calc(var(--u) * 1.4);
             font-weight: bold;
-            padding: calc(var(--u) * 0.1) calc(var(--u) * 0.35);
-            border-radius: calc(var(--u) * 0.3);
+            padding: calc(var(--u) * 0.15) calc(var(--u) * 0.5);
+            border-radius: calc(var(--u) * 0.4);
             background: rgba(255, 255, 255, 0.06);
             color: var(--muted);
         }
@@ -1171,28 +1171,27 @@
             align-items: center;
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border);
-            border-radius: calc(var(--u) * 0.4);
-            padding: calc(var(--u) * 0.25) calc(var(--u) * 0.45);
-            min-height: calc(var(--u) * 1.6);
-            gap: calc(var(--u) * 0.4);
+            border-radius: calc(var(--u) * 0.5);
+            padding: calc(var(--u) * 0.35) calc(var(--u) * 0.6);
+            min-height: calc(var(--u) * 2.0);
+            gap: calc(var(--u) * 0.5);
         }
 
         .status-ticker-label {
             background: rgba(255, 107, 74, 0.15);
             color: var(--temp-high);
-            font-size: calc(var(--u) * 0.8);
+            font-size: calc(var(--u) * 1.1);
             font-weight: bold;
-            padding: calc(var(--u) * 0.04) calc(var(--u) * 0.35);
-            border-radius: calc(var(--u) * 0.2);
+            padding: calc(var(--u) * 0.08) calc(var(--u) * 0.4);
+            border-radius: calc(var(--u) * 0.25);
             white-space: nowrap;
         }
 
         .status-ticker-content {
             flex: 1;
-            font-size: calc(var(--u) * 0.9);
+            font-size: calc(var(--u) * 1.2);
             color: var(--muted);
-        }
-    </style>
+        }    </style>
 </head>
 <body>
     <main id="app" aria-label="Weather receiver">
@@ -2479,46 +2478,45 @@
         const TIMETABLES = {
             toyo: {
                 weekday: [
-                    { h: 5, trains: [{m: 4, t: '各停', d: '西船橋'}, {m: 25, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
-                    { h: 6, trains: [{m: 11, t: '各停', d: '中野'}, {m: 23, t: '各停', d: '中野'}, {m: 34, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 54, t: '各停', d: '中野'}] },
-                    { h: 7, trains: [{m: 3, t: '各停', d: '中野'}, {m: 9, t: '各停', d: '中野'}, {m: 15, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 30, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 46, t: '各停', d: '中野'}, {m: 51, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
-                    { h: 8, trains: [{m: 2, t: '各停', d: '中野'}, {m: 6, t: '各停', d: '中野'}, {m: 11, t: '各停', d: '中野'}, {m: 16, t: '各停', d: '中野'}, {m: 21, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 31, t: '各停', d: '中野'}, {m: 37, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 49, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 9, trains: [{m: 2, t: '各停', d: '中野'}, {m: 10, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 10, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 11, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 12, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 13, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 14, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 15, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 16, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
-                    { h: 17, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
-                    { h: 18, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
-                    { h: 19, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
-                    { h: 20, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 45, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
-                    { h: 21, trains: [{m: 11, t: '各停', d: '中野'}, {m: 24, t: '各停', d: '中野'}, {m: 38, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '中野'}] },
-                    { h: 22, trains: [{m: 6, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '西船橋'}] },
-                    { h: 23, trains: [{m: 10, t: '各停', d: '西船橋'}, {m: 28, t: '各停', d: '西船橋'}, {m: 48, t: '各停', d: '西船橋'}] }
+                    { h: 5, trains: [{m: 9, t: '各停', d: '西船橋'}, {m: 30, t: '各停', d: '中野'}, {m: 49, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
+                    { h: 6, trains: [{m: 15, t: '各停', d: '中野'}, {m: 28, t: '各停', d: '中野'}, {m: 39, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 7, trains: [{m: 0, t: '各停', d: '中野'}, {m: 8, t: '各停', d: '中野'}, {m: 14, t: '各停', d: '中野'}, {m: 23, t: '各停', d: '中野'}, {m: 31, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 8, trains: [{m: 6, t: '各停', d: '中野'}, {m: 12, t: '各停', d: '中野'}, {m: 19, t: '各停', d: '中野'}, {m: 27, t: '各停', d: '中野'}, {m: 33, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 47, t: '各停', d: '中野'}, {m: 53, t: '各停', d: '中野'}] },
+                    { h: 9, trains: [{m: 0, t: '各停', d: '中野'}, {m: 8, t: '各停', d: '中野'}, {m: 14, t: '各停', d: '中野'}, {m: 23, t: '各停', d: '中野'}, {m: 33, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 53, t: '各停', d: '中野'}] },
+                    { h: 10, trains: [{m: 2, t: '各停', d: '中野'}, {m: 10, t: '快速', d: '中野'}, {m: 25, t: '快速', d: '中野'}, {m: 40, t: '快速', d: '中野'}, {m: 48, t: '各停', d: '中野'}, {m: 55, t: '快速', d: '中野'}] },
+                    ...Array.from({length: 4}, (_, i) => ({
+                        h: 11 + i,
+                        trains: [{m: 10, t: '快速', d: '中野'}, {m: 25, t: '快速', d: '中野'}, {m: 40, t: '快速', d: '中野'}, {m: 55, t: '快速', d: '中野'}]
+                    })),
+                    { h: 15, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 48, t: '各停', d: '中野'}, {m: 57, t: '各停', d: '中野'}] },
+                    { h: 16, trains: [{m: 7, t: '各停', d: '中野'}, {m: 11, t: '各停', d: '中野'}, {m: 22, t: '各停', d: '中野'}, {m: 30, t: '各停', d: '中野'}, {m: 39, t: '各停', d: '中野'}, {m: 47, t: '各停', d: '中野'}, {m: 54, t: '各停', d: '中野'}] },
+                    { h: 17, trains: [{m: 3, t: '各停', d: '中野'}, {m: 11, t: '各停', d: '中野'}, {m: 19, t: '各停', d: '中野'}, {m: 26, t: '各停', d: '中野'}, {m: 33, t: '各停', d: '中野'}, {m: 38, t: '各停', d: '中野'}, {m: 45, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
+                    { h: 18, trains: [{m: 12, t: '各停', d: '中野'}, {m: 23, t: '各停', d: '中野'}, {m: 34, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 46, t: '各停', d: '中野'}, {m: 53, t: '各停', d: '中野'}] },
+                    { h: 19, trains: [{m: 1, t: '各停', d: '中野'}, {m: 5, t: '各停', d: '中野'}, {m: 12, t: '各停', d: '中野'}, {m: 18, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 29, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 42, t: '各停', d: '中野'}, {m: 49, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 20, trains: [{m: 5, t: '各停', d: '中野'}, {m: 9, t: '各停', d: '中野'}, {m: 14, t: '各停', d: '中野'}, {m: 21, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 34, t: '各停', d: '中野'}, {m: 42, t: '各停', d: '中野'}, {m: 48, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 21, trains: [{m: 3, t: '各停', d: '中野'}, {m: 12, t: '各停', d: '中野'}, {m: 19, t: '各停', d: '中野'}, {m: 28, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 22, trains: [{m: 3, t: '各停', d: '中野'}, {m: 14, t: '各停', d: '中野'}, {m: 24, t: '各停', d: '中野'}, {m: 39, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '中野'}] },
+                    { h: 23, trains: [{m: 4, t: '各停', d: '東陽町'}, {m: 15, t: '各停', d: '東陽町'}, {m: 27, t: '各停', d: '東陽町'}, {m: 41, t: '各停', d: '東陽町'}, {m: 57, t: '各停', d: '東陽町'}] }
                 ],
                 weekend: [
-                    { h: 5, trains: [{m: 4, t: '各停', d: '西船橋'}, {m: 25, t: '各停', d: '中野'}, {m: 45, t: '各停', d: '中野'}] },
-                    { h: 6, trains: [{m: 5, t: '各停', d: '中野'}, {m: 22, t: '各停', d: '中野'}, {m: 38, t: '各停', d: '中野'}, {m: 53, t: '各停', d: '中野'}] },
-                    { h: 7, trains: [{m: 8, t: '各停', d: '中野'}, {m: 22, t: '各停', d: '中野'}, {m: 37, t: '各停', d: '中野'}, {m: 51, t: '各停', d: '中野'}] },
-                    { h: 8, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 9, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 10, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 11, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 12, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 13, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 14, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 15, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 16, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 17, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 18, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 19, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
-                    { h: 20, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 51, t: '各停', d: '中野'}] },
-                    { h: 21, trains: [{m: 6, t: '各停', d: '中野'}, {m: 21, t: '各停', d: '中野'}, {m: 37, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '中野'}] },
-                    { h: 22, trains: [{m: 8, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '西船橋'}] },
-                    { h: 23, trains: [{m: 4, t: '各停', d: '西船橋'}, {m: 24, t: '各停', d: '西船橋'}, {m: 44, t: '各停', d: '西船橋'}] }
+                    { h: 5, trains: [{m: 9, t: '各停', d: '西船橋'}, {m: 30, t: '各停', d: '中野'}, {m: 49, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
+                    { h: 6, trains: [{m: 15, t: '各停', d: '中野'}, {m: 28, t: '各停', d: '中野'}, {m: 39, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 7, trains: [{m: 0, t: '各停', d: '中野'}, {m: 8, t: '各停', d: '中野'}, {m: 14, t: '各停', d: '中野'}, {m: 23, t: '各停', d: '中野'}, {m: 31, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 8, trains: [{m: 1, t: '各停', d: '中野'}, {m: 7, t: '各停', d: '三鷹'}, {m: 14, t: '各停', d: '中野'}, {m: 19, t: '各停', d: '中野'}, {m: 26, t: '各停', d: '三鷹'}, {m: 34, t: '各停', d: '中野'}, {m: 41, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 9, trains: [{m: 5, t: '快速', d: '中野'}, {m: 9, t: '各停', d: '三鷹'}, {m: 17, t: '快速', d: '中野'}, {m: 28, t: '快速', d: '中野'}, {m: 40, t: '快速', d: '中野'}, {m: 55, t: '快速', d: '中野'}] },
+                    { h: 10, trains: [{m: 2, t: '各停', d: '中野'}, {m: 10, t: '快速', d: '中野'}, {m: 25, t: '快速', d: '中野'}, {m: 40, t: '快速', d: '中野'}, {m: 48, t: '各停', d: '中野'}, {m: 55, t: '快速', d: '中野'}] },
+                    ...Array.from({length: 5}, (_, i) => ({
+                        h: 11 + i,
+                        trains: [{m: 10, t: '快速', d: '中野'}, {m: 25, t: '快速', d: '中野'}, {m: 40, t: '快速', d: '中野'}, {m: 55, t: '快速', d: '中野'}]
+                    })),
+                    { h: 16, trains: [{m: 10, t: '快速', d: '中野'}, {m: 25, t: '快速', d: '中野'}, {m: 40, t: '快速', d: '中野'}, {m: 55, t: '快速', d: '中野'}] },
+                    { h: 17, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 18, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 19, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 20, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 21, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 22, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 23, trains: [{m: 8, t: '各停', d: '東陽町'}, {m: 23, t: '各停', d: '東陽町'}, {m: 32, t: '各停', d: '東陽町'}, {m: 47, t: '各停', d: '東陽町'}] }
                 ]
             },
             keisei: {
@@ -2548,7 +2546,7 @@
             }
         };
 
-        let displayToggleState = 'calendar'; // 'calendar' or 'timetable'
+        let displayToggleState =        let displayToggleState = 'calendar'; // 'calendar' or 'timetable'
         let displayToggleTimer = null;
 
         function getUpcomingDepartures(line, date, count = 5) {
@@ -2641,8 +2639,8 @@
         }
 
         function updateTimetableDisplay(now) {
-            const toyoDeps = getUpcomingDepartures('toyo', now, 5);
-            const keiseiDeps = getUpcomingDepartures('keisei', now, 5);
+            const toyoDeps = getUpcomingDepartures('toyo', now, 3);
+            const keiseiDeps = getUpcomingDepartures('keisei', now, 3);
             
             updateTimetableList('toyoTimetableList', toyoDeps, now);
             updateTimetableList('keiseiTimetableList', keiseiDeps, now);
