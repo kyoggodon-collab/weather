@@ -2182,7 +2182,7 @@
             const options = new cast.framework.CastReceiverOptions();
             // メディア非再生のカスタム UI でもアイドル切断しない
             options.disableIdleTimeout = true;
-            options.maxInactivity = 3600;
+            options.maxInactivity = 10800;
             context.start(options);
         }
 
