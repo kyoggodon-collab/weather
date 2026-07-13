@@ -1141,7 +1141,7 @@
         let lastSpotlightGroupKey = '';
         let lastSpotlightActiveIndex = -1;
         let lastSpotlightMinuteKey = '';
-        const PRE_START_MS = 10 * 60 * 1000;
+        const PRE_START_MS = 30 * 60 * 1000;
         const SPOTLIGHT_ROTATE_MS = 20 * 1000;
         const round = (value) => Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
 
@@ -2182,7 +2182,7 @@
             const options = new cast.framework.CastReceiverOptions();
             // メディア非再生のカスタム UI でもアイドル切断しない
             options.disableIdleTimeout = true;
-            options.maxInactivity = 10800;
+            options.maxInactivity = 3600;
             context.start(options);
         }
 
