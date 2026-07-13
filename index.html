@@ -988,6 +988,210 @@
             font-size: calc(var(--u) * 1.45);
             text-align: center;
         }
+
+        /* 時刻表・フェード用スタイル */
+        .week-grid-container {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: grid;
+            grid-template: 1fr / 1fr;
+            width: 100%;
+        }
+
+        .week-grid,
+        .timetable-panel {
+            grid-area: 1 / 1;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+        }
+
+        .week-grid.is-hidden,
+        .timetable-panel.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Nest Hub表示時は時刻表パネルを強制的に非表示にし、カレンダーを常時表示 */
+        html[data-layout="nest-hub"] .timetable-panel {
+            display: none !important;
+        }
+
+        html[data-layout="nest-hub"] .week-grid {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        .timetable-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            padding: calc(var(--u) * 0.8) calc(var(--u) * 1.0);
+            box-sizing: border-box;
+            gap: calc(var(--u) * 0.6);
+        }
+
+        .timetable-cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: calc(var(--u) * 1.0);
+            flex: 1;
+            min-height: 0;
+        }
+
+        .timetable-col {
+            display: flex;
+            flex-direction: column;
+            background: rgba(255, 255, 255, 0.035);
+            border-radius: calc(var(--u) * 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: calc(var(--u) * 0.6) calc(var(--u) * 0.8);
+            min-height: 0;
+        }
+
+        .timetable-header {
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.15);
+            padding-bottom: calc(var(--u) * 0.4);
+            border-bottom: 1.5px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: calc(var(--u) * 0.4);
+        }
+
+        .line-badge {
+            align-self: flex-start;
+            font-size: calc(var(--u) * 0.8);
+            font-weight: bold;
+            padding: calc(var(--u) * 0.08) calc(var(--u) * 0.4);
+            border-radius: calc(var(--u) * 0.3);
+            color: #fff;
+        }
+
+        .line-badge.toyo {
+            background: #009854; /* 東葉高速線カラー */
+        }
+
+        .line-badge.keisei {
+            background: #e12885; /* 新京成（京成松戸）ピンク */
+        }
+
+        .station-name {
+            font-size: calc(var(--u) * 1.3);
+            font-weight: bold;
+            color: var(--text);
+        }
+
+        .station-name .direction {
+            font-size: calc(var(--u) * 0.8);
+            font-weight: normal;
+            color: var(--muted);
+            margin-left: calc(var(--u) * 0.3);
+        }
+
+        .timetable-list {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: calc(var(--u) * 0.3);
+        }
+
+        .timetable-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: calc(var(--u) * 0.4);
+            padding: calc(var(--u) * 0.3) calc(var(--u) * 0.5);
+            border-left: calc(var(--u) * 0.16) solid transparent;
+        }
+
+        .timetable-row.first-train {
+            background: rgba(255, 255, 255, 0.06);
+            border-left-color: var(--accent);
+        }
+
+        .timetable-left {
+            display: flex;
+            align-items: center;
+            gap: calc(var(--u) * 0.5);
+        }
+
+        .train-time {
+            font-size: calc(var(--u) * 1.35);
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .train-type-badge {
+            font-size: calc(var(--u) * 0.72);
+            font-weight: bold;
+            padding: calc(var(--u) * 0.04) calc(var(--u) * 0.25);
+            border-radius: calc(var(--u) * 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--muted);
+        }
+
+        .train-type-badge.rapid {
+            background: rgba(255, 107, 74, 0.15);
+            color: var(--temp-high);
+            border: 1px solid rgba(255, 107, 74, 0.25);
+        }
+
+        .train-dest {
+            font-size: calc(var(--u) * 1.05);
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .timetable-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .countdown-badge {
+            font-size: calc(var(--u) * 0.88);
+            font-weight: bold;
+            padding: calc(var(--u) * 0.1) calc(var(--u) * 0.35);
+            border-radius: calc(var(--u) * 0.3);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--muted);
+        }
+
+        .countdown-badge.urgent {
+            background: rgba(255, 209, 102, 0.12);
+            color: var(--warn);
+        }
+
+        .status-ticker {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: calc(var(--u) * 0.4);
+            padding: calc(var(--u) * 0.25) calc(var(--u) * 0.45);
+            min-height: calc(var(--u) * 1.6);
+            gap: calc(var(--u) * 0.4);
+        }
+
+        .status-ticker-label {
+            background: rgba(255, 107, 74, 0.15);
+            color: var(--temp-high);
+            font-size: calc(var(--u) * 0.8);
+            font-weight: bold;
+            padding: calc(var(--u) * 0.04) calc(var(--u) * 0.35);
+            border-radius: calc(var(--u) * 0.2);
+            white-space: nowrap;
+        }
+
+        .status-ticker-content {
+            flex: 1;
+            font-size: calc(var(--u) * 0.9);
+            color: var(--muted);
+        }
     </style>
 </head>
 <body>
@@ -1048,7 +1252,35 @@
             </div>
 
             <section class="panel week-panel">
-                <div id="weekGrid" class="week-grid"></div>
+                <div class="week-grid-container">
+                    <div id="weekGrid" class="week-grid"></div>
+                    <div id="timetablePanel" class="timetable-panel is-hidden">
+                        <!-- 左右2カラム構成 -->
+                        <div class="timetable-cols">
+                            <div class="timetable-col toyo-line">
+                                <div class="timetable-header">
+                                    <div class="line-badge toyo">東葉高速線</div>
+                                    <div class="station-name">船橋日大前 <span class="direction">西船橋・中野 方面</span></div>
+                                </div>
+                                <div id="toyoTimetableList" class="timetable-list"></div>
+                            </div>
+                            <div class="timetable-col keisei-line">
+                                <div class="timetable-header">
+                                    <div class="line-badge keisei">京成松戸線</div>
+                                    <div class="station-name">北習志野 <span class="direction">京成津田沼・千葉中央 方面</span></div>
+                                </div>
+                                <div id="keiseiTimetableList" class="timetable-list"></div>
+                            </div>
+                        </div>
+                        <!-- 下部運行情報表示エリア -->
+                        <div class="status-ticker">
+                            <span class="status-ticker-label">運行情報</span>
+                            <marquee class="status-ticker-content" scrollamount="3">
+                                【東葉高速線】平常運転を行っています。 【京成松戸線】平常運転を行っています。
+                            </marquee>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section class="panel schedule-panel">
@@ -1569,6 +1801,9 @@
             });
 
             if (sec === lastClockSecond && timeStr === lastClockMinute && dateStr === lastClockDate) {
+                if (displayToggleState === 'timetable') {
+                    updateTimetableDisplay(now);
+                }
                 return;
             }
 
@@ -1585,6 +1820,10 @@
                 lastClockDate = dateStr;
             }
             lastClockSecond = sec;
+
+            if (displayToggleState === 'timetable') {
+                updateTimetableDisplay(now);
+            }
         }
 
         function ingestCastPayload(raw) {
@@ -2161,6 +2400,7 @@
             renderDailyWeek();
             renderWeekCalendar();
             renderEvents();
+            updateTimetableDisplay(getSyncedNow());
             scheduleHeavyDraw();
         }
 
@@ -2199,10 +2439,32 @@
             lastPressureDrawKey = '';
             drawRadar();
             drawPressure(true);
+            
+            // Layout and Time specific toggle adjustments
+            const layout = document.documentElement.dataset.layout || 'fhd';
+            const now = getSyncedNow();
+            const allowed = (layout !== 'nest-hub') && isTimetableTimeWindow(now);
+            
+            const weekGrid = el('weekGrid');
+            const timetablePanel = el('timetablePanel');
+            
+            if (!allowed) {
+                displayToggleState = 'calendar';
+                if (weekGrid) weekGrid.classList.remove('is-hidden');
+                if (timetablePanel) timetablePanel.classList.add('is-hidden');
+            }
+            
+            if (!displayToggleTimer) {
+                startDisplayToggleLoop();
+            }
+
             if (!IS_CAST_RECEIVER) {
                 renderDailyWeek();
                 renderWeekCalendar();
                 renderEvents();
+                if (displayToggleState === 'timetable') {
+                    updateTimetableDisplay(getSyncedNow());
+                }
                 return;
             }
             updateEventSpotlight();
@@ -2211,6 +2473,226 @@
         function scheduleLayoutRefresh() {
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(refreshLayoutViews, CAST.resizeDebounceMs);
+        }
+
+        // --- 時刻表データ & サイネージ制御ロジック ---
+        const TIMETABLES = {
+            toyo: {
+                weekday: [
+                    { h: 5, trains: [{m: 4, t: '各停', d: '西船橋'}, {m: 25, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
+                    { h: 6, trains: [{m: 11, t: '各停', d: '中野'}, {m: 23, t: '各停', d: '中野'}, {m: 34, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 54, t: '各停', d: '中野'}] },
+                    { h: 7, trains: [{m: 3, t: '各停', d: '中野'}, {m: 9, t: '各停', d: '中野'}, {m: 15, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 30, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 46, t: '各停', d: '中野'}, {m: 51, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 8, trains: [{m: 2, t: '各停', d: '中野'}, {m: 6, t: '各停', d: '中野'}, {m: 11, t: '各停', d: '中野'}, {m: 16, t: '各停', d: '中野'}, {m: 21, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 31, t: '各停', d: '中野'}, {m: 37, t: '各停', d: '中野'}, {m: 43, t: '各停', d: '中野'}, {m: 49, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 9, trains: [{m: 2, t: '各停', d: '中野'}, {m: 10, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 10, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 11, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 12, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 13, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 14, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 15, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 16, trains: [{m: 10, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 40, t: '各停', d: '中野'}, {m: 55, t: '各停', d: '中野'}] },
+                    { h: 17, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 18, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 19, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '中野'}, {m: 56, t: '各停', d: '中野'}] },
+                    { h: 20, trains: [{m: 8, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 32, t: '各停', d: '中野'}, {m: 45, t: '各停', d: '中野'}, {m: 58, t: '各停', d: '中野'}] },
+                    { h: 21, trains: [{m: 11, t: '各停', d: '中野'}, {m: 24, t: '各停', d: '中野'}, {m: 38, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '中野'}] },
+                    { h: 22, trains: [{m: 6, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '西船橋'}] },
+                    { h: 23, trains: [{m: 10, t: '各停', d: '西船橋'}, {m: 28, t: '各停', d: '西船橋'}, {m: 48, t: '各停', d: '西船橋'}] }
+                ],
+                weekend: [
+                    { h: 5, trains: [{m: 4, t: '各停', d: '西船橋'}, {m: 25, t: '各停', d: '中野'}, {m: 45, t: '各停', d: '中野'}] },
+                    { h: 6, trains: [{m: 5, t: '各停', d: '中野'}, {m: 22, t: '各停', d: '中野'}, {m: 38, t: '各停', d: '中野'}, {m: 53, t: '各停', d: '中野'}] },
+                    { h: 7, trains: [{m: 8, t: '各停', d: '中野'}, {m: 22, t: '各停', d: '中野'}, {m: 37, t: '各停', d: '中野'}, {m: 51, t: '各停', d: '中野'}] },
+                    { h: 8, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 9, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 10, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 11, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 12, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 13, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 14, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 15, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 16, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 17, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 18, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 19, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 35, t: '各停', d: '中野'}, {m: 50, t: '各停', d: '中野'}] },
+                    { h: 20, trains: [{m: 5, t: '各停', d: '中野'}, {m: 20, t: '各停', d: '中野'}, {m: 36, t: '各停', d: '中野'}, {m: 51, t: '各停', d: '中野'}] },
+                    { h: 21, trains: [{m: 6, t: '各停', d: '中野'}, {m: 21, t: '各停', d: '中野'}, {m: 37, t: '各停', d: '中野'}, {m: 52, t: '各停', d: '中野'}] },
+                    { h: 22, trains: [{m: 8, t: '各停', d: '中野'}, {m: 25, t: '各停', d: '中野'}, {m: 44, t: '各停', d: '西船橋'}] },
+                    { h: 23, trains: [{m: 4, t: '各停', d: '西船橋'}, {m: 24, t: '各停', d: '西船橋'}, {m: 44, t: '各停', d: '西船橋'}] }
+                ]
+            },
+            keisei: {
+                weekday: [
+                    { h: 5, trains: [{m: 12, t: '普通', d: '京成津田沼'}, {m: 32, t: '普通', d: '京成津田沼'}, {m: 52, t: '普通', d: '京成津田沼'}] },
+                    { h: 6, trains: [{m: 7, t: '普通', d: '京成津田沼'}, {m: 21, t: '普通', d: '京成津田沼'}, {m: 33, t: '普通', d: '京成津田沼'}, {m: 45, t: '普通', d: '京成津田沼'}, {m: 57, t: '普通', d: '京成津田沼'}] },
+                    { h: 7, trains: [{m: 7, t: '普通', d: '京成津田沼'}, {m: 16, t: '普通', d: '千葉中央'}, {m: 25, t: '普通', d: '京成津田沼'}, {m: 33, t: '普通', d: '千葉中央'}, {m: 42, t: '普通', d: '京成津田沼'}, {m: 50, t: '普通', d: '千葉中央'}, {m: 58, t: '普通', d: '京成津田沼'}] },
+                    { h: 8, trains: [{m: 6, t: '普通', d: '千葉中央'}, {m: 14, t: '普通', d: '京成津田沼'}, {m: 22, t: '普通', d: '千葉中央'}, {m: 30, t: '普通', d: '京成津田沼'}, {m: 38, t: '普通', d: '千葉中央'}, {m: 46, t: '普通', d: '京成津田沼'}, {m: 54, t: '普通', d: '千葉中央'}] },
+                    ...Array.from({length: 13}, (_, i) => ({
+                        h: 9 + i,
+                        trains: [{m: 3, t: '普通', d: '京成津田沼'}, {m: 13, t: '普通', d: '千葉中央'}, {m: 23, t: '普通', d: '京成津田沼'}, {m: 33, t: '普通', d: '千葉中央'}, {m: 43, t: '普通', d: '京成津田沼'}, {m: 53, t: '普通', d: '千葉中央'}]
+                    })),
+                    { h: 22, trains: [{m: 3, t: '普通', d: '京成津田沼'}, {m: 15, t: '普通', d: '京成津田沼'}, {m: 30, t: '普通', d: '京成津田沼'}, {m: 45, t: '普通', d: '京成津田沼'}] },
+                    { h: 23, trains: [{m: 0, t: '普通', d: '京成津田沼'}, {m: 15, t: '普通', d: '京成津田沼'}, {m: 35, t: '普通', d: '京成津田沼'}, {m: 55, t: '普通', d: '京成津田沼'}] }
+                ],
+                weekend: [
+                    { h: 5, trains: [{m: 12, t: '普通', d: '京成津田沼'}, {m: 32, t: '普通', d: '京成津田沼'}, {m: 52, t: '普通', d: '京成津田沼'}] },
+                    { h: 6, trains: [{m: 12, t: '普通', d: '京成津田沼'}, {m: 27, t: '普通', d: '京成津田沼'}, {m: 42, t: '普通', d: '京成津田沼'}, {m: 57, t: '普通', d: '京成津田沼'}] },
+                    { h: 7, trains: [{m: 12, t: '普通', d: '京成津田沼'}, {m: 24, t: '普通', d: '京成津田沼'}, {m: 36, t: '普通', d: '京成津田沼'}, {m: 48, t: '普通', d: '京成津田沼'}] },
+                    ...Array.from({length: 14}, (_, i) => ({
+                        h: 8 + i,
+                        trains: [{m: 3, t: '普通', d: '京成津田沼'}, {m: 13, t: '普通', d: '千葉中央'}, {m: 23, t: '普通', d: '京成津田沼'}, {m: 33, t: '普通', d: '千葉中央'}, {m: 43, t: '普通', d: '京成津田沼'}, {m: 53, t: '普通', d: '千葉中央'}]
+                    })),
+                    { h: 22, trains: [{m: 3, t: '普通', d: '京成津田沼'}, {m: 15, t: '普通', d: '京成津田沼'}, {m: 30, t: '普通', d: '京成津田沼'}, {m: 45, t: '普通', d: '京成津田沼'}] },
+                    { h: 23, trains: [{m: 0, t: '普通', d: '京成津田沼'}, {m: 15, t: '普通', d: '京成津田沼'}, {m: 35, t: '普通', d: '京成津田沼'}, {m: 55, t: '普通', d: '京成津田沼'}] }
+                ]
+            }
+        };
+
+        let displayToggleState = 'calendar'; // 'calendar' or 'timetable'
+        let displayToggleTimer = null;
+
+        function getUpcomingDepartures(line, date, count = 5) {
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            const scheduleType = isWeekend ? 'weekend' : 'weekday';
+            const list = TIMETABLES[line][scheduleType];
+            
+            const nowHour = date.getHours();
+            const nowMin = date.getMinutes();
+            let upcoming = [];
+            
+            for (let hOffset = 0; hOffset < 24; hOffset++) {
+                const h = (nowHour + hOffset) % 24;
+                const hourData = list.find(item => item.h === h);
+                if (hourData) {
+                    for (let i = 0; i < hourData.trains.length; i++) {
+                        const train = hourData.trains[i];
+                        if (hOffset === 0 && train.m < nowMin) {
+                            continue;
+                        }
+                        
+                        let depDate = new Date(date);
+                        depDate.setHours(h, train.m, 0, 0);
+                        if (hOffset > 0 && h < nowHour) {
+                            depDate.setDate(depDate.getDate() + 1);
+                        }
+                        
+                        upcoming.push({
+                            timeStr: `${String(h).padStart(2, '0')}:${String(train.m).padStart(2, '0')}`,
+                            type: train.type || train.t,
+                            dest: train.dest || train.d,
+                            depDate: depDate
+                        });
+                        
+                        if (upcoming.length >= count) {
+                            break;
+                        }
+                    }
+                }
+                if (upcoming.length >= count) {
+                    break;
+                }
+            }
+            return upcoming;
+        }
+
+        function getCountdownText(depDate, nowDate) {
+            const diffMs = depDate.getTime() - nowDate.getTime();
+            const diffMin = Math.ceil(diffMs / 60000);
+            
+            if (diffMin <= 0) {
+                return { text: '先発', urgent: true };
+            } else if (diffMin === 1) {
+                return { text: 'まもなく', urgent: true };
+            } else if (diffMin <= 5) {
+                return { text: `あと${diffMin}分`, urgent: true };
+            } else {
+                return { text: `あと${diffMin}分`, urgent: false };
+            }
+        }
+
+        function updateTimetableList(elementId, departures, now) {
+            const container = el(elementId);
+            if (!container) return;
+            
+            if (departures.length === 0) {
+                container.innerHTML = '<div class="empty">本日の運行は終了しました</div>';
+                return;
+            }
+            
+            container.innerHTML = departures.map((dep, index) => {
+                const countdown = getCountdownText(dep.depDate, now);
+                const rowClass = ['timetable-row', index === 0 ? 'first-train' : ''].filter(Boolean).join(' ');
+                const badgeClass = ['countdown-badge', countdown.urgent ? 'urgent' : ''].filter(Boolean).join(' ');
+                const typeClass = ['train-type-badge', dep.type === '快速' ? 'rapid' : ''].filter(Boolean).join(' ');
+                
+                return `
+                    <div class="${rowClass}">
+                        <div class="timetable-left">
+                            <span class="train-time">${dep.timeStr}</span>
+                            <span class="${typeClass}">${dep.type}</span>
+                            <span class="train-dest">${dep.dest}</span>
+                        </div>
+                        <div class="timetable-right">
+                            <span class="${badgeClass}">${countdown.text}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateTimetableDisplay(now) {
+            const toyoDeps = getUpcomingDepartures('toyo', now, 5);
+            const keiseiDeps = getUpcomingDepartures('keisei', now, 5);
+            
+            updateTimetableList('toyoTimetableList', toyoDeps, now);
+            updateTimetableList('keiseiTimetableList', keiseiDeps, now);
+        }
+
+        function isTimetableTimeWindow(date) {
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const totalMinutes = hours * 60 + minutes;
+            
+            const startMinutes = 16 * 60 + 30; // 16:30
+            const endMinutes = 24 * 60; // 24:00 (1440 mins)
+            
+            return totalMinutes >= startMinutes && totalMinutes < endMinutes;
+        }
+
+        function startDisplayToggleLoop() {
+            if (displayToggleTimer) {
+                clearInterval(displayToggleTimer);
+            }
+            
+            displayToggleTimer = setInterval(() => {
+                const layout = document.documentElement.dataset.layout || 'fhd';
+                const weekGrid = el('weekGrid');
+                const timetablePanel = el('timetablePanel');
+                if (!weekGrid || !timetablePanel) return;
+                
+                const now = getSyncedNow();
+                const allowed = (layout !== 'nest-hub') && isTimetableTimeWindow(now);
+                
+                if (!allowed) {
+                    if (displayToggleState === 'timetable') {
+                        displayToggleState = 'calendar';
+                        weekGrid.classList.remove('is-hidden');
+                        timetablePanel.classList.add('is-hidden');
+                    }
+                    return;
+                }
+                
+                if (displayToggleState === 'calendar') {
+                    displayToggleState = 'timetable';
+                    weekGrid.classList.add('is-hidden');
+                    timetablePanel.classList.remove('is-hidden');
+                    updateTimetableDisplay(now);
+                } else {
+                    displayToggleState = 'calendar';
+                    weekGrid.classList.remove('is-hidden');
+                    timetablePanel.classList.add('is-hidden');
+                }
+            }, 20000);
         }
 
         window.addEventListener('resize', scheduleLayoutRefresh);
